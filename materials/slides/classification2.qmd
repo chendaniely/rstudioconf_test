@@ -238,6 +238,10 @@ and testing sets.
 
 ## Splitting the breast cancer data set
 
+- Split the data so 75% are in the training set, and 25% in the test set
+- Data are shuffled
+- Split is stratified on the `Class` variable
+
 ```{python}
 from sklearn.model_selection import train_test_split
 
@@ -246,95 +250,79 @@ cancer_train, cancer_test = train_test_split(
 )
 ```
 
+---
 
+## Checking the splits
 
+- We can use `.info()` to look at the splits
 
-```
+- Let's look at the training split (in practice you look at both)
+
+```{python}
 cancer_train.info()
 ```
 
-```{code-cell} ipython3
-cancer_test.info()
-```
+---
 
-```{code-cell} ipython3
-:tags: [remove-cell]
+## Checking the splits
 
-glue("cancer_train_nrow", "{:d}".format(len(cancer_train)))
-glue("cancer_test_nrow", "{:d}".format(len(cancer_test)))
-```
-
-```{index} DataFrame; info
-```
-
-We can see from the `info` method above that the training set contains {glue:text}`cancer_train_nrow` observations,
-while the test set contains {glue:text}`cancer_test_nrow` observations. This corresponds to
-a train / test split of 75% / 25%, as desired. Recall from {numref}`Chapter %s <classification1>`
-that we use the `info` method to preview the number of rows, the variable names, their data types, and
-missing entries of a data frame.
-
-```{index} Series; value_counts
-```
-
-We can use the `value_counts` method with the `normalize` argument set to `True`
+- We can use the `value_counts` method with the `normalize` argument set to `True`
 to find the percentage of malignant and benign classes
-in `cancer_train`. We see about {glue:text}`cancer_train_b_prop`% of the training
-data are benign and {glue:text}`cancer_train_m_prop`%
-are malignant, indicating that our class proportions were roughly preserved when we split the data.
+in `cancer_train`.
 
-```{code-cell} ipython3
+- We can see our class proportions were roughly preserved when we split the data.
+
+```{python}
 cancer_train["Class"].value_counts(normalize=True)
 ```
 
-```{code-cell} ipython3
-:tags: [remove-cell]
+---
 
-glue("cancer_train_b_prop", "{:0.0f}".format(cancer_train["Class"].value_counts(normalize=True)["Benign"]*100))
-glue("cancer_train_m_prop", "{:0.0f}".format(cancer_train["Class"].value_counts(normalize=True)["Malignant"]*100))
-```
+### Preprocessing with data splitting
 
-### Preprocess the data
+- Many machine learning models are sensitive to the scale of the predictors,
+and even if not, comparison of importance of features for prediction 
+after fitting requires scaling.
 
-As we mentioned in the last chapter, K-nearest neighbors is sensitive to the scale of the predictors,
-so we should perform some preprocessing to standardize them. An
-additional consideration we need to take when doing this is that we should
-create the standardization preprocessor using **only the training data**. This ensures that
-our test data does not influence any aspect of our model training. Once we have
-created the standardization preprocessor, we can then apply it separately to both the
-training and test data sets.
+- When preprocessing the data (scaling is part of this), it is critical
+that we use **only the training set** in creating the mathematical function to do this.
 
-+++
+- If this is not done, we will get overly optimistic test accuracy, 
+as our test data will have influenced our model.
 
-```{index} scikit-learn; Pipeline, scikit-learn; make_column_transformer, scikit-learn; StandardScaler
-```
+- After creating the preprocessing function, 
+we can then apply it separately to both the training and test data sets.
 
-Fortunately, `scikit-learn` helps us handle this properly as long as we wrap our
-analysis steps in a `Pipeline`, as in {numref}`Chapter %s <classification1>`.
-So below we construct and prepare
-the preprocessor using `make_column_transformer` just as before.
+---
 
-```{code-cell} ipython3
+###  Preprocessing with `scikit-learn`
+
+- `scikit-learn` helps us handle this properly as long as we wrap our
+analysis steps in a `Pipeline`.
+
+- Specifically, we construct and prepare
+the preprocessor using `make_column_transformer`:
+
+```{python}
 from sklearn.preprocessing import StandardScaler
-from sklearn.compose import make_column_transformer
+from sklearn.compose import make_column_transformer, make_column_selector
 
 cancer_preprocessor = make_column_transformer(
     (StandardScaler(), ["Smoothness", "Concavity"]),
 )
 ```
 
-### Train the classifier
+--- 
 
-Now that we have split our original data set into training and test sets, we
-can create our K-nearest neighbors classifier with only the training set using
-the technique we learned in the previous chapter. For now, we will just choose
-the number $K$ of neighbors to be 3, and use only the concavity and smoothness predictors by
-selecting them from the `cancer_train` data frame.
-We will first import the `KNeighborsClassifier` model and `make_pipeline` from `sklearn`.
-Then as before we will create a model object, combine
-the model object and preprocessor into a `Pipeline` using the `make_pipeline` function, and then finally
-use the `fit` method to build the classifier.
+## Train the classifier
 
-```{code-cell} ipython3
+- Now we can create our K-nearest neighbors classifier 
+with only the training set.
+
+- For simplicity, we will just choose $K$ = 3, 
+and use only the concavity and smoothness predictors.
+
+```{python3}
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline
 
@@ -349,29 +337,21 @@ knn_pipeline.fit(X, y)
 knn_pipeline
 ```
 
+---
+
 ### Predict the labels in the test set
 
-```{index} scikit-learn; predict
-```
-
 Now that we have a K-nearest neighbors classifier object, we can use it to
-predict the class labels for our test set and
-augment the original test data with a column of predictions.
-The `Class` variable contains the actual
-diagnoses, while the `predicted` contains the predicted diagnoses from the
-classifier. Note that below we print out just the `ID`, `Class`, and `predicted`
-variables in the output data frame.
+predict the class labels for our test set:
 
-```{code-cell} ipython3
+```{python}
 cancer_test["predicted"] = knn_pipeline.predict(cancer_test[["Smoothness", "Concavity"]])
 cancer_test[["ID", "Class", "predicted"]]
 ```
 
-(eval-performance-clasfcn2)=
-### Evaluate performance
+---
 
-```{index} scikit-learn; score, scikit-learn; precision_score, scikit-learn; recall_score
-```
+### Evaluate performance
 
 Finally, we can assess our classifier's performance. First, we will examine accuracy.
 To do this we will use the `score` method, specifying two arguments:
