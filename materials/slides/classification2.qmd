@@ -31,8 +31,6 @@ By the end of the session, learners will be able to do the following:
 - Describe underfitting and overfitting, and relate it to the number of neighbors in K-nearest neighbors classification.
 - Describe the advantages and disadvantages of the K-nearest neighbors classification algorithm.
 
----
-
 ## Evaluating performance
 
 Sometimes our classifier might make the wrong prediction. A classifier does not
@@ -41,8 +39,6 @@ classifier to make too many wrong predictions.
 
 How do we measure how "good" our
 classifier is? 
-
----
 
 ## Data splitting
 
@@ -59,17 +55,13 @@ labels for new observations without known class labels.
 
 ![](img/classification2/training_test.png)
 
----
-
 ## Prediction accuracy
 
 $$\mathrm{accuracy} = \frac{\mathrm{number \; of  \; correct  \; predictions}}{\mathrm{total \;  number \;  of  \; predictions}}$$
 
 ![](img/classification2/ML-paradigm-test.png)
 
----
-
-### Confusion matrix
+## Confusion matrix
 
 - Prediction accuracy only tells us how often the classifier
 makes mistakes in general, but does not tell us anything about the *kinds* of
@@ -79,7 +71,7 @@ $$\mathrm{accuracy} = \frac{\mathrm{number \; of  \; correct  \; predictions}}{\
 
 - The **confusion matrix** tells a more complete story.
 
-### Confusion matrix for the breast cancer data:
+## Confusion matrix for the breast cancer data:
 
 |                        | **Predicted Malignant** | **Predicted Benign** |
 |------------------------|-------------------------|----------------------|
@@ -91,8 +83,6 @@ $$\mathrm{accuracy} = \frac{\mathrm{number \; of  \; correct  \; predictions}}{\
 - **True Negative:** A benign observation that was classified as benign (bottom right in {numref}`confusion-matrix-table`).
 - **False Negative:** A malignant observation that was classified as benign (top right in {numref}`confusion-matrix-table`).
 
----
-
 ## Precision & recall
 
 - *Precision* quantifies how many of the positive predictions the classifier made were actually positive. 
@@ -103,8 +93,6 @@ $$\mathrm{precision} = \frac{\mathrm{number \; of  \; correct \; positive \; pre
 identified as positive. 
 
 $$\mathrm{recall} = \frac{\mathrm{number \; of  \; correct  \; positive \; predictions}}{\mathrm{total \;  number \;  of  \; positive \; test \; set \; observations}}.$$
-
----
 
 ## Precision and recall for the breast cancer data set example
 
@@ -203,8 +191,6 @@ cancer["Class"] = cancer["Class"].replace({
 })
 ```
 
----
-
 ## Breast cancer data
 
 ```{python}
@@ -216,9 +202,7 @@ perim_concav = alt.Chart(cancer).mark_circle().encode(
 perim_concav
 ```
 
----
-
-### Create the train / test split
+## Create the train / test split
 
 - **Before** fitting any models, or doing exploratory data analysis, it is critical that you split the data into training and test sets.
 
@@ -234,8 +218,6 @@ of splitting the data for us.
 to ensure the same proportion of each class ends up in both the training 
 and testing sets.
 
----
-
 ## Splitting the breast cancer data set
 
 - Split the data so 75% are in the training set, and 25% in the test set
@@ -250,8 +232,6 @@ cancer_train, cancer_test = train_test_split(
 )
 ```
 
----
-
 ## Checking the splits
 
 - We can use `.info()` to look at the splits
@@ -261,8 +241,6 @@ cancer_train, cancer_test = train_test_split(
 ```{python}
 cancer_train.info()
 ```
-
----
 
 ## Checking the splits
 
@@ -276,9 +254,7 @@ in `cancer_train`.
 cancer_train["Class"].value_counts(normalize=True)
 ```
 
----
-
-### Preprocessing with data splitting
+## Preprocessing with data splitting
 
 - Many machine learning models are sensitive to the scale of the predictors,
 and even if not, comparison of importance of features for prediction 
@@ -293,9 +269,7 @@ as our test data will have influenced our model.
 - After creating the preprocessing function, 
 we can then apply it separately to both the training and test data sets.
 
----
-
-###  Preprocessing with `scikit-learn`
+##  Preprocessing with `scikit-learn`
 
 - `scikit-learn` helps us handle this properly as long as we wrap our
 analysis steps in a `Pipeline`.
@@ -311,8 +285,6 @@ cancer_preprocessor = make_column_transformer(
     (StandardScaler(), ["Smoothness", "Concavity"]),
 )
 ```
-
---- 
 
 ## Train the classifier
 
@@ -337,9 +309,7 @@ knn_pipeline.fit(X, y)
 knn_pipeline
 ```
 
----
-
-### Predict the labels in the test set
+## Predict the labels in the test set
 
 Now that we have a K-nearest neighbors classifier object, we can use it to
 predict the class labels for our test set:
@@ -349,9 +319,7 @@ cancer_test["predicted"] = knn_pipeline.predict(cancer_test[["Smoothness", "Conc
 cancer_test[["ID", "Class", "predicted"]]
 ```
 
----
-
-### Evaluate performance
+## Evaluate performance
 
 To evaluate the model, we will look at:
 - accuracy
@@ -363,8 +331,6 @@ To evaluate the model, we will look at:
 All of these together, 
 will help us develop a fuller picture of how the model is performing, 
 as opposed to only evaluating the model based on a single metric or table.
-
----
 
 ## Accuracy, precision and recall
 
@@ -393,8 +359,6 @@ recall_score(
 )
 ```
 
----
-
 ## Confusion matrix
 
 - We can look at the *confusion matrix* for the classifier
@@ -414,7 +378,7 @@ pd.crosstab(
 )
 ```
 
-### Critically analyze performance
+## Critically analyze performance
 
 - Is 90% accuracy, a precision of 83% and a recall of 91% good enough?
 
@@ -435,8 +399,6 @@ we still have a ways to go...
 
 - Analyzing model performance really depends on your application!
 
----
-
 ## Tuning the classifier
 
 - Most predictive models in statistics and machine learning have parameters 
@@ -450,8 +412,6 @@ that determines how many neighbors participate in the class vote.
 - How do we choose $K$, or any parameter for other models?
 
 - **Data splitting**!
-
----
 
 ## Validation set
 
@@ -467,8 +427,6 @@ we can fit on the training set, and evaluate on the validation set.
 we can refit the model with the best parameter on the entire training set 
 and then evaluate our model on the test set.
 
----
-
 ## Can we do better?
 
 - Depending on how we split the data into the training and validation sets,
@@ -480,15 +438,11 @@ and averaging the accuracy scores to get a better estimate.
 
 - We call this cross-validation.
 
----
-
 ## Cross-validation
 
 An example of 5-fold cross-validation:
 
 ![](img/classification2/cv.png)
-
----
 
 ## Cross-validation in `scikit-learn`
 
@@ -510,99 +464,46 @@ knn = KNeighborsClassifier(n_neighbors=3)
 cancer_pipe = make_pipeline(cancer_preprocessor, knn)
 X = cancer_train[["Smoothness", "Concavity"]]
 y = cancer_train["Class"]
-cv_5_df = pd.DataFrame(
+cv_10_df = pd.DataFrame(
     cross_validate(
         estimator=cancer_pipe,
-        cv=5,
+        cv=10,
         X=X,
         y=y
     )
 )
 
-cv_5_df
+cv_10_df
 ```
 
----
+```{python}
+cv_10_metrics = cv_10_df.agg(["mean", "sem"])
+cv_10_metrics
+```
 
-### Parameter value selection
+## Parameter value selection
 
-Using 5- and 10-fold cross-validation, we have estimated that the prediction
-accuracy of our classifier is somewhere around {glue:text}`cv_10_mean`%.
-Whether that is good or not
-depends entirely on the downstream application of the data analysis. In the
-present situation, we are trying to predict a tumor diagnosis, with expensive,
-damaging chemo/radiation therapy or patient death as potential consequences of
-misprediction. Hence, we might like to
-do better than {glue:text}`cv_10_mean`% for this application.
-
-In order to improve our classifier, we have one choice of parameter: the number of
-neighbors, $K$. Since cross-validation helps us evaluate the accuracy of our
+- Since cross-validation helps us evaluate the accuracy of our
 classifier, we can use cross-validation to calculate an accuracy for each value
-of $K$ in a reasonable range, and then pick the value of $K$ that gives us the
-best accuracy. The `scikit-learn` package collection provides built-in
+of our parameter, here $K$, in a reasonable range, 
+
+- Then we pick the value of $K$ that gives us the
+best accuracy, and refit the model with our parameter on the training data, 
+and then evaluate on the test data.
+
+- The `scikit-learn` package collection provides built-in
 functionality, named `GridSearchCV`, to automatically handle the details for us.
-Before we use `GridSearchCV`, we need to create a new pipeline
-with a `KNeighborsClassifier` that has the number of neighbors left unspecified.
 
-```{index} see: make_pipeline; scikit-learn
-```
-```{index} scikit-learn;make_pipeline
-```
+## Paramter value selection
 
-```{code-cell} ipython3
-knn = KNeighborsClassifier()
+```{python}
+knn = KNeighborsClassifier() #don't specify the number of neighbours
 cancer_tune_pipe = make_pipeline(cancer_preprocessor, knn)
-```
 
-+++
-
-Next we specify the grid of parameter values that we want to try for
-each tunable parameter. We do this in a Python dictionary: the key is
-the identifier of the parameter to tune, and the value is a list of parameter values
-to try when tuning. We can find the "identifier" of a parameter by using
-the `get_params` method on the pipeline.
-```{code-cell} ipython3
-cancer_tune_pipe.get_params()
-```
-Wow, there's quite a bit of *stuff* there! If you sift through the muck
-a little bit, you will see one parameter identifier that stands out:
-`"kneighborsclassifier__n_neighbors"`. This identifier combines the name
-of the K nearest neighbors classification step in our pipeline, `kneighborsclassifier`,
-with the name of the parameter, `n_neighbors`.
-We now construct the `parameter_grid` dictionary that will tell `GridSearchCV`
-what parameter values to try.
-Note that you can specify multiple tunable parameters
-by creating a dictionary with multiple key-value pairs, but
-here we just have to tune the number of neighbors.
-```{code-cell} ipython3
 parameter_grid = {
     "kneighborsclassifier__n_neighbors": range(1, 100, 5),
 }
-```
-The `range` function in Python that we used above allows us to specify a sequence of values.
-The first argument is the starting number (here, `1`),
-the second argument is *one greater than* the final number (here, `100`),
-and the third argument is the number to values to skip between steps in the sequence (here, `5`).
-So in this case we generate the sequence 1, 6, 11, 16, ..., 96.
-If we instead specified `range(0, 100, 5)`, we would get the sequence 0, 5, 10, 15, ..., 90, 95.
-The number 100 is not included because the third argument is *one greater than* the final possible
-number in the sequence. There are two additional useful ways to employ `range`.
-If we call `range` with just one argument, Python counts
-up to that number starting at 0. So `range(4)` is the same as `range(0, 4, 1)` and generates the sequence 0, 1, 2, 3.
-If we call `range` with two arguments, Python counts starting at the first number up to the second number.
-So `range(1, 4)` is the same as `range(1, 4, 1)` and generates the sequence `1, 2, 3`.
 
-```{index} cross-validation; GridSearchCV, scikit-learn; GridSearchCV, scikit-learn; RandomizedSearchCV
-```
-
-Okay! We are finally ready to create the `GridSearchCV` object.
-First we import it from the `sklearn` package.
-Then we pass it the `cancer_tune_pipe` pipeline in the `estimator` argument,
-the `parameter_grid` in the `param_grid` argument,
-and specify `cv=10` folds. Note that this does not actually run
-the tuning yet; just as before, we will have to use the `fit` method.
-
-```{code-cell} ipython3
 from sklearn.model_selection import GridSearchCV
 
 cancer_tune_grid = GridSearchCV(
@@ -612,14 +513,12 @@ cancer_tune_grid = GridSearchCV(
 )
 ```
 
-Now we use the `fit` method on the `GridSearchCV` object to begin the tuning process.
-We pass the training data predictors and labels as the two arguments to `fit` as usual.
-The `cv_results_` attribute of the output contains the resulting cross-validation
-accuracy estimate for each choice of `n_neighbors`, but it isn't in an easily used
-format. We will wrap it in a `pd.DataFrame` to make it easier to understand,
-and print the `info` of the result.
+## Paramter value selection
 
-```{code-cell} ipython3
+- Now we use the fit method on the `GridSearchCV` object 
+to begin the tuning process.
+
+```{python3}
 cancer_tune_grid.fit(
     cancer_train[["Smoothness", "Concavity"]],
     cancer_train["Class"]
@@ -628,21 +527,13 @@ accuracies_grid = pd.DataFrame(cancer_tune_grid.cv_results_)
 accuracies_grid.info()
 ```
 
-There is a lot of information to look at here, but we are most interested
-in three quantities: the number of neighbors (`param_kneighbors_classifier__n_neighbors`),
+## Paramter value selection
+
+- We are most interested in three quantities: the number of neighbors (`param_kneighbors_classifier__n_neighbors`),
 the cross-validation accuracy estimate (`mean_test_score`),
-and the standard error of the accuracy estimate. Unfortunately `GridSearchCV` does
-not directly output the standard error for each cross-validation accuracy; but
-it *does* output the standard *deviation* (`std_test_score`). We can compute
-the standard error from the standard deviation by dividing it by the square
-root of the number of folds, i.e.,
+and the standard error of the accuracy estimate (we need to calculate this ourselves). 
 
-$$\text{Standard Error} = \frac{\text{Standard Deviation}}{\sqrt{\text{Number of Folds}}}.$$
-
-We will also rename the parameter name column to be a bit more readable,
-and drop the now unused `std_test_score` column.
-
-```{code-cell} ipython3
+```{python}
 accuracies_grid["sem_test_score"] = accuracies_grid["std_test_score"] / 10**(1/2)
 accuracies_grid = (
     accuracies_grid[[
@@ -655,13 +546,9 @@ accuracies_grid = (
 accuracies_grid
 ```
 
-We can decide which number of neighbors is best by plotting the accuracy versus $K$,
-as shown in {numref}`fig:06-find-k`.
-Here we are using the shortcut `point=True` to layer a point and line chart.
+## Visualize paramter value selection
 
-```{code-cell} ipython3
-:tags: [remove-output]
-
+```{python}
 accuracy_vs_k = alt.Chart(accuracies_grid).mark_line(point=True).encode(
     x=alt.X("n_neighbors").title("Neighbors"),
     y=alt.Y("mean_test_score")
@@ -672,64 +559,30 @@ accuracy_vs_k = alt.Chart(accuracies_grid).mark_line(point=True).encode(
 accuracy_vs_k
 ```
 
-```{code-cell} ipython3
-:tags: [remove-cell]
+## Best parameter value
 
-glue("fig:06-find-k", accuracy_vs_k)
-glue("best_k_unique", "{:d}".format(accuracies_grid["n_neighbors"][accuracies_grid["mean_test_score"].idxmax()]))
-glue("best_acc", "{:.1f}".format(accuracies_grid["mean_test_score"].max()*100))
-```
+- We can also obtain the number of neighbours with the highest accuracy 
+programmatically by accessing the `best_params_` attribute 
+of the fit `GridSearchCV` object.
 
-:::{glue:figure} fig:06-find-k
-:name: fig:06-find-k
-
-Plot of estimated accuracy versus the number of neighbors.
-:::
-
-We can also obtain the number of neighbours with the highest accuracy programmatically by accessing
-the `best_params_` attribute of the fit `GridSearchCV` object. Note that it is still useful to visualize
-the results as we did above since this provides additional information on how the model performance varies.
-```{code-cell} ipython3
+```{python}
 cancer_tune_grid.best_params_
 ```
 
-+++
+Do we use $K$ = 36? 
 
-Setting the number of
-neighbors to $K =$ {glue:text}`best_k_unique`
-provides the highest cross-validation accuracy estimate ({glue:text}`best_acc`%). But there is no exact or perfect answer here;
-any selection from $K = 30$ to $80$ or so would be reasonably justified, as all
-of these differ in classifier accuracy by a small amount. Remember: the
-values you see on this plot are *estimates* of the true accuracy of our
-classifier. Although the
-$K =$ {glue:text}`best_k_unique` value is
-higher than the others on this plot,
-that doesn't mean the classifier is actually more accurate with this parameter
-value! Generally, when selecting $K$ (and other parameters for other predictive
-models), we are looking for a value where:
+Generally, when selecting a parameters, we are looking for a value where:
 
-- we get roughly optimal accuracy, so that our model will likely be accurate;
-- changing the value to a nearby one (e.g., adding or subtracting a small number) doesn't decrease accuracy too much, so that our choice is reliable in the presence of uncertainty;
-- the cost of training the model is not prohibitive (e.g., in our situation, if $K$ is too large, predicting becomes expensive!).
+- we get roughly optimal accuracy
+- changing the value to a nearby one doesn’t change the accuracy too much
+- the cost of training the model is not prohibitive
 
-We know that $K =$ {glue:text}`best_k_unique`
-provides the highest estimated accuracy. Further, {numref}`fig:06-find-k` shows that the estimated accuracy
-changes by only a small amount if we increase or decrease $K$ near $K =$ {glue:text}`best_k_unique`.
-And finally, $K =$ {glue:text}`best_k_unique` does not create a prohibitively expensive
-computational cost of training. Considering these three points, we would indeed select
-$K =$ {glue:text}`best_k_unique` for the classifier.
+## Under/Overfitting
 
-+++
+- What happens if we keep increasing the number of neighbors $K$? 
+- The cross-validation accuracy estimate actually starts to decrease!
 
-### Under/Overfitting
-
-To build a bit more intuition, what happens if we keep increasing the number of
-neighbors $K$? In fact, the cross-validation accuracy estimate actually starts to decrease!
-Let's specify a much larger range of values of $K$ to try in the `param_grid`
-argument of `GridSearchCV`. {numref}`fig:06-lots-of-ks` shows a plot of estimated accuracy as
-we vary $K$ from 1 to almost the number of observations in the data set.
-
-```{code-cell} ipython3
+```{python}
 :tags: [remove-output]
 
 large_param_grid = {
@@ -759,51 +612,9 @@ large_accuracy_vs_k = alt.Chart(large_accuracies_grid).mark_line(point=True).enc
 large_accuracy_vs_k
 ```
 
-```{code-cell} ipython3
-:tags: [remove-cell]
+## Under/Overfitting
 
-glue("fig:06-lots-of-ks", large_accuracy_vs_k)
-```
-
-:::{glue:figure} fig:06-lots-of-ks
-:name: fig:06-lots-of-ks
-
-Plot of accuracy estimate versus number of neighbors for many K values.
-:::
-
-+++
-
-```{index} underfitting; classification
-```
-
-**Underfitting:** What is actually happening to our classifier that causes
-this? As we increase the number of neighbors, more and more of the training
-observations (and those that are farther and farther away from the point) get a
-"say" in what the class of a new observation is. This causes a sort of
-"averaging effect" to take place, making the boundary between where our
-classifier would predict a tumor to be malignant versus benign to smooth out
-and become *simpler.* If you take this to the extreme, setting $K$ to the total
-training data set size, then the classifier will always predict the same label
-regardless of what the new observation looks like. In general, if the model
-*isn't influenced enough* by the training data, it is said to **underfit** the
-data.
-
-```{index} overfitting; classification
-```
-
-**Overfitting:** In contrast, when we decrease the number of neighbors, each
-individual data point has a stronger and stronger vote regarding nearby points.
-Since the data themselves are noisy, this causes a more "jagged" boundary
-corresponding to a *less simple* model.  If you take this case to the extreme,
-setting $K = 1$, then the classifier is essentially just matching each new
-observation to its closest neighbor in the training data set. This is just as
-problematic as the large $K$ case, because the classifier becomes unreliable on
-new data: if we had a different training set, the predictions would be
-completely different.  In general, if the model *is influenced too much* by the
-training data, it is said to **overfit** the data.
-
-```{code-cell} ipython3
-:tags: [remove-cell]
+```{python}
 alt.data_transformers.disable_max_rows()
 
 cancer_plot = (
@@ -890,61 +701,38 @@ for k in [1, 7, 20, 300]:
     plot_list.append(cancer_plot + prediction_plot)
 ```
 
-```{code-cell} ipython3
-:tags: [remove-cell]
+## Evaluating on the test set
 
-glue(
-    "fig:06-decision-grid-K",
-    ((plot_list[0] | plot_list[1])
-    & (plot_list[2] | plot_list[3])).configure_legend(
-        orient="bottom", titleAnchor="middle"
-    ),
-)
-```
+- Before we evaluate on the test set, 
+we need to refit the model using the best parameter(s) 
+on the entire training set
 
-:::{glue:figure} fig:06-decision-grid-K
-:name: fig:06-decision-grid-K
+- Luckily, `scikit-learn` does it for us automatically!
 
-Effect of K in overfitting and underfitting.
-:::
+- To make predictions and assess the estimated accuracy of the best model on the test data, we can use the
+`score` and `predict` methods of the fit `GridSearchCV` object.
 
-+++
 
-Both overfitting and underfitting are problematic and will lead to a model that
-does not generalize well to new data. When fitting a model, we need to strike a
-balance between the two. You can see these two effects in
-{numref}`fig:06-decision-grid-K`, which shows how the classifier changes as we
-set the number of neighbors $K$ to 1, 7, 20, and 300.
 
-+++
-
-### Evaluating on the test set
-
-Now that we have tuned the K-NN classifier and set $K =$ {glue:text}`best_k_unique`,
-we are done building the model and it is time to evaluate the quality of its predictions on the held out 
-test data, as we did earlier in {numref}`eval-performance-clasfcn2`.
-We first need to retrain the K-NN classifier
-on the entire training data set using the selected number of neighbors.
-Fortunately we do not have to do this ourselves manually; `scikit-learn` does it for
-us automatically. To make predictions and assess the estimated accuracy of the best model on the test data, we can use the
-`score` and `predict` methods of the fit `GridSearchCV` object. We can then pass those predictions to
-the `precision`, `recall`, and `crosstab` functions to assess the estimated precision and recall, and print a confusion matrix.
-
-```{index} scikit-learn;predict, scikit-learn;score, scikit-learn;precision_score, scikit-learn;recall_score, crosstab
-```
-
-```{code-cell} ipython3
+```{python}
 cancer_test["predicted"] = cancer_tune_grid.predict(
     cancer_test[["Smoothness", "Concavity"]]
 )
+```
 
+## Evaluating on the test set
+
+- We can then pass those predictions to
+the `precision`, `recall`, and `crosstab` functions to assess the estimated precision and recall, and print a confusion matrix.
+
+```{python}
 cancer_tune_grid.score(
     cancer_test[["Smoothness", "Concavity"]],
     cancer_test["Class"]
 )
 ```
 
-```{code-cell} ipython3
+```{python}
 precision_score(
     y_true=cancer_test["Class"],
     y_pred=cancer_test["predicted"],
@@ -952,7 +740,7 @@ precision_score(
 )
 ```
 
-```{code-cell} ipython3
+```{python}
 recall_score(
     y_true=cancer_test["Class"],
     y_pred=cancer_test["predicted"],
@@ -960,95 +748,18 @@ recall_score(
 )
 ```
 
-```{code-cell} ipython3
+```{python}
 pd.crosstab(
     cancer_test["Class"],
     cancer_test["predicted"]
 )
 ```
-```{code-cell} ipython3
-:tags: [remove-cell]
-cancer_prec_tuned = precision_score(
-    y_true=cancer_test["Class"],
-    y_pred=cancer_test["predicted"],
-    pos_label='Malignant'
-)
-cancer_rec_tuned = recall_score(
-    y_true=cancer_test["Class"],
-    y_pred=cancer_test["predicted"],
-    pos_label='Malignant'
-)
-cancer_acc_tuned = cancer_tune_grid.score(
-    cancer_test[["Smoothness", "Concavity"]],
-    cancer_test["Class"]
-)
-glue("cancer_acc_tuned", "{:0.0f}".format(100*cancer_acc_tuned))
-glue("cancer_prec_tuned", "{:0.0f}".format(100*cancer_prec_tuned))
-glue("cancer_rec_tuned", "{:0.0f}".format(100*cancer_rec_tuned))
-glue("mean_acc_ks", "{:0.0f}".format(100*accuracies_grid["mean_test_score"].mean()))
-glue("std3_acc_ks", "{:0.0f}".format(3*100*accuracies_grid["mean_test_score"].std()))
-glue("mean_sem_acc_ks", "{:0.0f}".format(100*accuracies_grid["sem_test_score"].mean()))
-glue("n_neighbors_max", "{:0.0f}".format(accuracies_grid["n_neighbors"].max()))
-glue("n_neighbors_min", "{:0.0f}".format(accuracies_grid["n_neighbors"].min()))
-```
-
-At first glance, this is a bit surprising: the accuracy of the classifier
-has not changed much despite tuning the number of neighbors! Our first model
-with $K =$ 3 (before we knew how to tune) had an estimated accuracy of {glue:text}`cancer_acc_1`%, 
-while the tuned model with $K =$ {glue:text}`best_k_unique` had an estimated accuracy
-of {glue:text}`cancer_acc_tuned`%. Upon examining {numref}`fig:06-find-k` again to see the
-cross validation accuracy estimates for a range of neighbors, this result
-becomes much less surprising. From {glue:text}`n_neighbors_min` to around {glue:text}`n_neighbors_max` neighbors, the cross
-validation accuracy estimate varies only by around {glue:text}`std3_acc_ks`%, with
-each estimate having a standard error around {glue:text}`mean_sem_acc_ks`%.
-Since the cross-validation accuracy estimates the test set accuracy,
-the fact that the test set accuracy also doesn't change much is expected.
-Also note that the $K =$ 3 model had a precision 
-precision of {glue:text}`cancer_prec_1`% and recall of {glue:text}`cancer_rec_1`%,
-while the tuned model had
-a precision of {glue:text}`cancer_prec_tuned`% and recall of {glue:text}`cancer_rec_tuned`%.
-Given that the recall decreased&mdash;remember, in this application, recall
-is critical to making sure we find all the patients with malignant tumors&mdash;the tuned model may actually be *less* preferred
-in this setting. In any case, it is important to think critically about the result of tuning. Models tuned to
-maximize accuracy are not necessarily better for a given application.
 
 ## Summary
 
-Classification algorithms use one or more quantitative variables to predict the
-value of another categorical variable. In particular, the K-nearest neighbors
-algorithm does this by first finding the $K$ points in the training data
-nearest to the new observation, and then returning the majority class vote from
-those training observations. We can tune and evaluate a classifier by splitting
-the data randomly into a training and test data set. The training set is used
-to build the classifier, and we can tune the classifier (e.g., select the number
-of neighbors in K-nearest neighbors) by maximizing estimated accuracy via
-cross-validation. After we have tuned the model, we can use the test set to
-estimate its accuracy.  The overall process is summarized in
-{numref}`fig:06-overview`.
+![](img/classification2/train-test-overview.png)
 
-+++
-
-```{figure} img/classification2/train-test-overview.png
-:name: fig:06-overview
-
-Overview of K-NN classification.
-```
-
-+++
-
-```{index} scikit-learn;Pipeline, cross-validation, K-nearest neighbors; classification, classification
-```
-
-The overall workflow for performing K-nearest neighbors classification using `scikit-learn` is as follows:
-
-1. Use the `train_test_split` function to split the data into a training and test set. Set the `stratify` argument to the class label column of the dataframe. Put the test set aside for now.
-2. Create a `Pipeline` that specifies the preprocessing steps and the classifier.
-3. Define the parameter grid by passing the set of $K$ values that you would like to tune.
-4. Use `GridSearchCV` to estimate the classifier accuracy for a range of $K$ values. Pass the pipeline and parameter grid defined in steps 2. and 3. as the `param_grid` argument and the `estimator` argument, respectively.
-5. Execute the grid search by passing the training data to the `fit` method on the `GridSearchCV` instance created in step 4.
-6. Pick a value of $K$ that yields a high cross-validation accuracy estimate that doesn't change much if you change $K$ to a nearby value.
-7. Create a new model object for the best parameter value (i.e., $K$), and retrain the classifier by calling the `fit` method.
-8. Evaluate the estimated accuracy of the classifier on the test set using the `score` method.
+## K-nearest neighbors classification algorithm
 
 In these last two chapters, we focused on the K-nearest neighbors algorithm,
 but there are many other methods we could have used to predict a categorical label.
@@ -1067,7 +778,10 @@ the K-NN here.
 2. may not perform well with a large number of predictors, and
 3. may not perform well when classes are imbalanced.
 
-+++
+## Other classification algorithms
+
+![](img/classification2/scikit-learn-classifiers.png)
+scikit-learn classification documentation: <https://scikit-learn.org/stable/supervised_learning.html>
 
 ## Predictor variable selection
 
