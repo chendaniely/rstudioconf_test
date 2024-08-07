@@ -12,6 +12,12 @@ execute:
   warning: false
 ---
 
+```{python}
+#| include: false
+import pandas as pd
+pd.set_option('display.max_rows', 5)
+```
+
 ## Session learning objectives
 By the end of the session, learners will be able to do the following:
 
@@ -55,25 +61,27 @@ labels for new observations without known class labels.
 
 ## Splitting the data into training and testing sets
 
-![](img/classification2/training_test.png)
+![](img/classification2/training_test.png){fig-align="center"}
 
 ## Prediction accuracy
 
 $$\mathrm{accuracy} = \frac{\mathrm{number \; of  \; correct  \; predictions}}{\mathrm{total \;  number \;  of  \; predictions}}$$
 
-![](img/classification2/ML-paradigm-test.png)
+![](img/classification2/ML-paradigm-test.png){fig-align="center"}
 
 ## Is knowing accuracy enough?
+
+- Example accuracy calculation:
+
+$$\mathrm{accuracy} = \frac{\mathrm{number \; of  \; correct  \; predictions}}{\mathrm{total \;  number \;  of  \; predictions}} = \frac{58}{65} = 0.892$$
 
 - Prediction accuracy only tells us how often the classifier
 makes mistakes in general, but does not tell us anything about the *kinds* of
 mistakes the classifier makes.  
 
-$$\mathrm{accuracy} = \frac{\mathrm{number \; of  \; correct  \; predictions}}{\mathrm{total \;  number \;  of  \; predictions}} = \frac{1+57}{1+57+4+3} = 0.892.$$
-
 - The **confusion matrix** tells a more complete story.
 
-## Confusion matrix for the breast cancer data:
+## Example confusion matrix for the breast cancer data:
 
 |                        | **Predicted Malignant** | **Predicted Benign** |
 |------------------------|-------------------------|----------------------|
@@ -89,12 +97,12 @@ $$\mathrm{accuracy} = \frac{\mathrm{number \; of  \; correct  \; predictions}}{\
 
 - *Precision* quantifies how many of the positive predictions the classifier made were actually positive. 
 
-$$\mathrm{precision} = \frac{\mathrm{number \; of  \; correct \; positive \; predictions}}{\mathrm{total \;  number \;  of \; positive  \; predictions}}.$$
+$$\mathrm{precision} = \frac{\mathrm{number \; of  \; correct \; positive \; predictions}}{\mathrm{total \;  number \;  of \; positive  \; predictions}}$$
 
 - *Recall* quantifies how many of the positive observations in the test set were
 identified as positive. 
 
-$$\mathrm{recall} = \frac{\mathrm{number \; of  \; correct  \; positive \; predictions}}{\mathrm{total \;  number \;  of  \; positive \; test \; set \; observations}}.$$
+$$\mathrm{recall} = \frac{\mathrm{number \; of  \; correct  \; positive \; predictions}}{\mathrm{total \;  number \;  of  \; positive \; test \; set \; observations}}$$
 
 ## Precision and recall for the breast cancer data set example
 
@@ -103,7 +111,7 @@ $$\mathrm{recall} = \frac{\mathrm{number \; of  \; correct  \; positive \; predi
 | **Actually Malignant** | 1                       | 3                    |
 | **Actually Benign**    | 4                       | 57                   |
 
-$$\mathrm{precision} = \frac{1}{1+4} = 0.20, \quad \mathrm{recall} = \frac{1}{1+3} = 0.25.$$
+$$\mathrm{precision} = \frac{1}{1+4} = 0.20, \quad \mathrm{recall} = \frac{1}{1+3} = 0.25$$
 
 > So even with an accuracy of 89%, the precision and recall of the classifier
 > were both relatively low. For this data analysis context, recall is
@@ -147,8 +155,6 @@ we will get a fresh batch of 10 numbers that also look random.
 
 ```{python}
 random_numbers2 = nums_0_to_9.sample(n=10).to_list()
-
-random_numbers1
 random_numbers2
 ```
 
@@ -158,14 +164,17 @@ If we choose a different value for the seed---say, 4235---we
 obtain a different sequence of random numbers:
 
 ```{python}
+# seed was 1 on the last slide when we generated this list
+random_numbers1
+```
+
+```{python}
 np.random.seed(4235)
 random_numbers1_different = nums_0_to_9.sample(n=10).to_list()
 
 random_numbers1
 random_numbers1_different
 ```
-
----
 
 ## Back to the breast cancer data set example
 
@@ -192,14 +201,24 @@ cancer["Class"] = cancer["Class"].replace({
 
 ## Breast cancer data
 
+:::: {.columns}
+::: {.column width="50%"}
 ```{python}
 perim_concav = alt.Chart(cancer).mark_circle().encode(
     x=alt.X("Smoothness").scale(zero=False),
     y="Concavity",
     color=alt.Color("Class").title("Diagnosis")
 )
+```
+:::
+
+::: {.column width="50%"}
+```{python}
+#| echo: false
 perim_concav
 ```
+:::
+::::
 
 ## Create the train / test split
 
@@ -287,12 +306,16 @@ cancer_preprocessor = make_column_transformer(
 
 ## Train the classifier
 
+:::: {.columns}
+::: {.column width="50%"}
 - Now we can create our K-nearest neighbors classifier 
 with only the training set.
 
 - For simplicity, we will just choose $K$ = 3, 
 and use only the concavity and smoothness predictors.
+:::
 
+::: {.column width="50%"}
 ```{python}
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import make_pipeline
@@ -307,6 +330,8 @@ knn_pipeline.fit(X, y)
 
 knn_pipeline
 ```
+::: 
+::::
 
 ## Predict the labels in the test set
 
@@ -315,7 +340,7 @@ predict the class labels for our test set:
 
 ```{python}
 cancer_test["predicted"] = knn_pipeline.predict(cancer_test[["Smoothness", "Concavity"]])
-cancer_test[["ID", "Class", "predicted"]]
+print(cancer_test[["ID", "Class", "predicted"]])
 ```
 
 ## Evaluate performance
@@ -442,12 +467,12 @@ and averaging the accuracy scores to get a better estimate.
 
 An example of 5-fold cross-validation:
 
-![](img/classification2/cv.png)
+![](img/classification2/cv.png){fig-align="center"}
 
 ## Cross-validation in `scikit-learn`
 
 :::: {.columns}
-::: {.column width="50%"}
+::: {.column width="40%"}
 - Use the `scikit-learn` `cross_validate` function. 
 
 - Need to specify:
@@ -460,7 +485,7 @@ An example of 5-fold cross-validation:
 each train and validate fold automatically.
 :::
 
-::: {.column width="50%"}
+::: {.column width="60%"}
 ```{python}
 from sklearn.model_selection import cross_validate
 
@@ -477,7 +502,7 @@ cv_10_df = pd.DataFrame(
     )
 )
 
-cv_10_df
+print(cv_10_df)
 ```
 
 ```{python}
@@ -521,9 +546,13 @@ cancer_tune_grid = GridSearchCV(
 
 ## Parameter value selection
 
+:::: {.columns}
+::: {.column width="50%"}
 - Now we use the fit method on the `GridSearchCV` object 
 to begin the tuning process.
+:::
 
+::: {.column width="50%"}
 ```{python}
 cancer_tune_grid.fit(
     cancer_train[["Smoothness", "Concavity"]],
@@ -532,12 +561,10 @@ cancer_tune_grid.fit(
 accuracies_grid = pd.DataFrame(cancer_tune_grid.cv_results_)
 accuracies_grid.info()
 ```
+:::
+::::
 
-## Paramter value selection
-
-- We are most interested in three quantities: the number of neighbors (`param_kneighbors_classifier__n_neighbors`),
-the cross-validation accuracy estimate (`mean_test_score`),
-and the standard error of the accuracy estimate (we need to calculate this ourselves). 
+## Parameter value selection
 
 ```{python}
 accuracies_grid["sem_test_score"] = accuracies_grid["std_test_score"] / 10**(1/2)
@@ -549,21 +576,35 @@ accuracies_grid = (
     ]]
     .rename(columns={"param_kneighborsclassifier__n_neighbors": "n_neighbors"})
 )
-accuracies_grid
+print(accuracies_grid)
 ```
 
 ## Visualize paramter value selection
 
+:::: {.columns}
+::: {.column width="60%"}
 ```{python}
-accuracy_vs_k = alt.Chart(accuracies_grid).mark_line(point=True).encode(
-    x=alt.X("n_neighbors").title("Neighbors"),
-    y=alt.Y("mean_test_score")
+accuracy_vs_k = (
+    alt.Chart(accuracies_grid)
+    .mark_line(point=True)
+    .encode(
+        x=alt.X("n_neighbors")
+        .title("Neighbors"),
+        y=alt.Y("mean_test_score")
         .scale(zero=False)
         .title("Accuracy estimate")
+    )
 )
+```
+:::
 
+::: {.column width="40%"}
+```{python}
+#| echo: false
 accuracy_vs_k
 ```
+:::
+::::
 
 ## Best parameter value
 
@@ -575,6 +616,10 @@ of the fit `GridSearchCV` object.
 cancer_tune_grid.best_params_
 ```
 
+## Best parameter value
+
+:::: {.columns}
+::: {.column width="50%"}
 Do we use $K$ = 36? 
 
 Generally, when selecting a parameters, we are looking for a value where:
@@ -582,13 +627,22 @@ Generally, when selecting a parameters, we are looking for a value where:
 - we get roughly optimal accuracy
 - changing the value to a nearby one doesn’t change the accuracy too much
 - the cost of training the model is not prohibitive
+:::
 
+::: {.column width="50%"}
+```{python}
+#| echo: false
+accuracy_vs_k
+```
+:::
+::::
 ## Under/Overfitting
 
 - What happens if we keep increasing the number of neighbors $K$? 
 - The cross-validation accuracy estimate actually starts to decrease!
 
 ```{python}
+#| echo: false
 large_param_grid = {
     "kneighborsclassifier__n_neighbors": range(1, 385, 10),
 }
@@ -619,6 +673,7 @@ large_accuracy_vs_k
 ## Under/Overfitting
 
 ```{python}
+#| echo: false
 alt.data_transformers.disable_max_rows()
 
 cancer_plot = (
@@ -703,10 +758,13 @@ for k in [1, 7, 20, 300]:
         )
     )
     plot_list.append(cancer_plot + prediction_plot)
+cancer_plot
 ```
 
 ## Evaluating on the test set
 
+:::: {.columns}
+::: {.column width="50%"}
 - Before we evaluate on the test set, 
 we need to refit the model using the best parameter(s) 
 on the entire training set
@@ -715,20 +773,24 @@ on the entire training set
 
 - To make predictions and assess the estimated accuracy of the best model on the test data, we can use the
 `score` and `predict` methods of the fit `GridSearchCV` object.
+:::
 
-
-
+::: {.column width="50%"}
 ```{python}
 cancer_test["predicted"] = cancer_tune_grid.predict(
     cancer_test[["Smoothness", "Concavity"]]
 )
 ```
+:::
+::::
 
 ## Evaluating on the test set
 
 - We can then pass those predictions to
 the `precision`, `recall`, and `crosstab` functions to assess the estimated precision and recall, and print a confusion matrix.
 
+:::: {.columns}
+::: {.column width="50%"}
 ```{python}
 cancer_tune_grid.score(
     cancer_test[["Smoothness", "Concavity"]],
@@ -751,24 +813,24 @@ recall_score(
     pos_label='Malignant'
 )
 ```
+:::
 
+::: {.column width="50%"}
 ```{python}
-pd.crosstab(
+conf_matrix = pd.crosstab(
     cancer_test["Class"],
     cancer_test["predicted"]
 )
+print(conf_matrix)
 ```
+:::
+::::
 
 ## Summary
 
 ![](img/classification2/train-test-overview.png)
 
 ## K-nearest neighbors classification algorithm
-
-In these last two chapters, we focused on the K-nearest neighbors algorithm,
-but there are many other methods we could have used to predict a categorical label.
-All algorithms have their strengths and weaknesses, and we summarize these for
-the K-NN here.
 
 **Strengths:** K-nearest neighbors classification
 
@@ -784,7 +846,7 @@ the K-NN here.
 
 ## Other classification algorithms
 
-![](img/classification2/scikit-learn-classifiers.png)
+![](img/classification2/scikit-learn-classifiers.png){width=75%}
 scikit-learn classification documentation: <https://scikit-learn.org/stable/supervised_learning.html>
 
 ## Additional resources
@@ -792,26 +854,17 @@ scikit-learn classification documentation: <https://scikit-learn.org/stable/supe
 - The [Classification II: evaluation & tuning](https://python.datasciencebook.ca/classification2.html)
   chapter of Data Science: A First Introduction (Python Edition) by 
   Tiffany Timbers, Trevor Campbell, Melissa Lee, Joel Ostblom, Lindsey Heagy
+  contains all the content presented here with a detailed narrative.
 - The [`scikit-learn` website](https://scikit-learn.org/stable/) is an excellent
   reference for more details on, and advanced usage of, the functions and
   packages in the past two chapters. Aside from that, it also offers many
   useful [tutorials](https://scikit-learn.org/stable/tutorial/index.html)
-  to get you started. It's worth noting that the `scikit-learn` package
-  does a lot more than just classification, and so the
-  examples on the website similarly go beyond classification as well. In the next
-  two chapters, you'll learn about another kind of predictive modeling setting,
-  so it might be worth visiting the website only after reading through those
-  chapters.
+  to get you started. 
 - [*An Introduction to Statistical Learning*](https://www.statlearning.com/) {cite:p}`james2013introduction` provides
   a great next stop in the process of
   learning about classification. Chapter 4 discusses additional basic techniques
   for classification that we do not cover, such as logistic regression, linear
-  discriminant analysis, and naive Bayes. Chapter 5 goes into much more detail
-  about cross-validation. Chapters 8 and 9 cover decision trees and support
-  vector machines, two very popular but more advanced classification methods.
-  Finally, Chapter 6 covers a number of methods for selecting predictor
-  variables. Note that while this book is still a very accessible introductory
-  text, it requires a bit more mathematical background than we require.
+  discriminant analysis, and naive Bayes.
 
 ## References
 
