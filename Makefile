@@ -8,7 +8,7 @@ pc-setup:
 	rm -rf ../welcome.ipynb
 
 	# copy over repo files to parent directory
-	cp -rf materials ..
+	cp -rf worksheets ..
 
 	# rename directory
 	cd .. & mv -f rstudioconf_test setup
