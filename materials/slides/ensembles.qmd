@@ -48,14 +48,14 @@ pd.set_option('display.max_rows', 5)
   the presence of heart disease (`AHD`) in patients, 
   based off 13 measured characteristics.
 
-- The heart data set contains a binary outcome for heart disease 
+- The [heart data set](https://www.statlearning.com/s/Heart.csv) 
+  contains a binary outcome for heart disease 
   for patients who presented with chest pain.
 :::
 
 ::: {.column width="50%"}
 ```{python}
-url = "https://www.statlearning.com/s/Heart.csv"
-heart = pd.read_csv(url, index_col=0)
+heart = pd.read_csv("data/Heart.csv", index_col=0)
 heart.info()
 ```
 :::
@@ -71,6 +71,17 @@ heart.info()
 heart.head()
 ```
 
+## Do we have a class imbalance?
+
+It's always important to check this, as it may impact your splitting 
+and/or modeling decisions.
+
+```{python}
+heart['AHD'].value_counts(normalize=True)
+```
+
+This looks pretty good! 
+We can move forward this time without doing much more about this.
 
 ## Categorical variables
 
