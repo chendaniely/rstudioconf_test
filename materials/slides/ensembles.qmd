@@ -17,3 +17,187 @@ execute:
 import pandas as pd
 pd.set_option('display.max_rows', 5)
 ```
+
+## Tree-based methods
+
+- Algorithms that stratifying or segmenting the predictor space
+  into a number of simple regions.
+
+- We call these algorithms decision-tree methods 
+ because the decisions used to segment the predictor space 
+ can be summarized in a tree.
+ 
+- Decision trees on their own, are very explainable and intuitive,
+  but not very powerful at predicting. 
+  
+- However, there are extensions of decision trees, 
+  such as random forest and boosted trees,
+  which are very powerful at predicting. 
+  We will demonstrate two of these in this session.
+
+## Decision trees
+
+- [Decision Trees](https://mlu-explain.github.io/decision-tree/)  
+  by Jared Wilber & Lucía Santamaría
+
+## Example: the heart data set
+
+:::: {.columns}
+::: {.column width="50%"}
+- Let's consider a situation where we'd like to be able to predict 
+  the presence of heart disease (`AHD`) in patients, 
+  based off 13 measured characteristics.
+
+- The heart data set contains a binary outcome for heart disease 
+  for patients who presented with chest pain.
+:::
+
+::: {.column width="50%"}
+```{python}
+url = "https://www.statlearning.com/s/Heart.csv"
+heart = pd.read_csv(url, index_col=0)
+heart.info()
+```
+:::
+::::
+
+## Example: the heart data set
+
+- An angiographic test was performed and a label for `AHD` of Yes
+  was labelled to indicate the presence of heart disease,
+  otherwise the label was No.
+  
+```{python}
+heart.head()
+```
+
+
+## Categorical variables
+
+:::: {.columns}
+::: {.column width="35%"}
+- This is our first case of seeing categorical predictor variables, 
+can we treat them the same as numerical ones? **No!** 
+
+- In `scikit-learn` we must perform **one-hot encoding**
+:::
+
+::: {.column width="65%"}
+![](https://scales.arabpsychology.com/wp-content/uploads/2024/05/onehot1-1-1.png)
+
+*Source: <https://scales.arabpsychology.com/stats/how-can-i-perform-one-hot-encoding-in-r/>*
+:::
+::::
+
+## Data splitting
+
+Let's split the data into training and test sets:
+
+```{python}
+from sklearn.model_selection import train_test_split
+
+heart_train, heart_test = train_test_split(
+    heart, train_size=0.75, stratify=heart["AHD"]
+)
+```
+
+## One hot encoding & pre-processing
+
+```{python}
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import make_column_transformer, make_column_selector
+
+numeric_feats = ['Age', 'RestBP', 'Chol', 'RestECG', 'MaxHR', 'Oldpeak','Slope', 'Ca']
+passthrough_feats = ['Sex', 'Fbs', 'ExAng']
+categorical_feats = ['ChestPain', 'Thal']
+
+heart_preprocessor = make_column_transformer(
+    (StandardScaler(), numeric_feats), 
+    ("passthrough", passthrough_feats),     
+    (OneHotEncoder(handle_unknown = "ignore"), categorical_feats),     
+)
+```
+
+## Fitting a decision tree
+
+```{python}
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.pipeline import make_pipeline
+
+decision_tree = DecisionTreeClassifier()
+
+X = heart_train.drop(columns=['AHD'])
+y = heart_train['AHD']
+
+dt_pipeline = make_pipeline(heart_preprocessor, decision_tree)
+dt_pipeline.fit(X, y)
+```
+
+## How did we do
+
+- change this to CV error!
+
+Let's predict on the test set:
+
+:::: {.columns}
+::: {.column width="50%"}
+```{python}
+# Accuracy
+heart_test['predicted'] = dt_pipeline.predict(heart_test.drop(columns=['AHD']))
+dt_pipeline.score(
+    heart_test.drop(columns=['AHD']),
+    heart_test["AHD"]
+)
+```
+
+```{python}
+from sklearn.metrics import recall_score, precision_score
+
+# Precision
+precision_score(
+    y_true=heart_test['AHD'],
+    y_pred=heart_test['predicted'],
+    pos_label='Yes'
+)
+```
+
+```{python}
+# Recall
+recall_score(
+    y_true=heart_test['AHD'],
+    y_pred=heart_test['predicted'],
+    pos_label='Yes'
+)
+```
+:::
+
+::: {.column width="50%"}
+```{python}
+conf_matrix = pd.crosstab(
+    heart_test['AHD'],
+    heart_test['predicted']
+)
+print(conf_matrix)
+```
+
+```{python}
+# Majority classifier
+heart_train['AHD'].value_counts(normalize=True)
+```
+:::
+::::
+
+## Can we do better?
+
+- [The Random Forest Algorithm](https://mlu-explain.github.io/random-forest/) 
+  by Jenny Yeon & Jared Wilber
+  
+## Random forest in `scikit-learn`
+
+- TBD
+
+## Boosting
+
+- TBD
+
+## Boosting with `lightgbm`
