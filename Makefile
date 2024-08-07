@@ -9,6 +9,3 @@ pc-setup:
 
 	# copy over repo files to parent directory
 	cp -rf worksheets ..
-
-	# rename directory
-	cd .. & mv -f rstudioconf_test setup
