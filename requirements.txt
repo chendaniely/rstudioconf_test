@@ -1,4 +1,5 @@
 altair
+lightgbm
+matplotlib
 pandas
 scikit-learn
-matplotlib
