@@ -8,4 +8,4 @@ pc-setup:
 	rm -rf ../welcome.ipynb
 
 	# copy over repo files to parent directory
-	mv materials ..
+	cp -rf materials ..
