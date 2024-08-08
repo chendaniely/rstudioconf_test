@@ -497,6 +497,429 @@ fig.update_layout(margin=dict(l=0, r=0, b=0, t=1), template="plotly_white")
 
 ```
 
+### Summary of K-nearest neighbors algorithm
+
+The K-nearest neighbors algorithm works as follows:
+
+1. Compute the distance between the new observation and each observation in the training set
+2. Find the $K$ rows corresponding to the $K$ smallest distances
+3. Classify the new observation based on a majority vote of the neighbor classes
+
+## K-nearest neighbors with `scikit-learn`
+
+- K-nearest neighbors algorithm is implemented in [`scikit-learn`](https://scikit-learn.org/stable/index.html)
+
+```{python}
+from sklearn import set_config
+
+# Output dataframes instead of arrays
+set_config(transform_output="pandas")
+```
+
+Now we can get started with `sklearn` and `KNeighborsClassifier()`
+
+```{python}
+from sklearn.neighbors import KNeighborsClassifier
+```
+
+### Review cancer data
+
+```{python}
+cancer_train = cancer[["Class", "Perimeter", "Concavity"]]
+print(cancer_train)
+```
+
+### `scikit-learn`: Create Model Object
+
+```{python}
+from sklearn.neighbors import KNeighborsClassifier
+
+knn = KNeighborsClassifier(n_neighbors=5)
+knn
+```
+
+### `scikit-learn`: Fit the model
+
+```{python}
+knn.fit(
+  X=cancer_train[["Perimeter", "Concavity"]],
+  y=cancer_train["Class"]
+)
+```
+
+:::{.callout-note}
+1. We do not re-assign the variable
+2. The arguments are `X` and `y` (note the capitialization).
+   This comes from matrix notation.
+:::
+
+### `scikit-learn`: Predict
+
+```{python}
+new_obs = pd.DataFrame({"Perimeter": [0], "Concavity": [3.5]})
+print(new_obs)
+```
+
+```{python}
+knn.predict(new_obs)
+```
+
+## Data preprocessing: Scaling
+
+For KNN:
+
+- the *scale* of each variable (i.e., its size and range of values) matters
+- distance based algorithm
+
+Compare these 2 scenarios:
+
+- Person A (200 lbs, 6ft tall) vs Person B (202 lbs, 6ft tall)
+- Person A (200 lbs, 6ft tall) vs Person B (200 lbs, 8ft tall)
+
+All have a distance of 2
+
+### Data preprocessing: Centering
+
+Many other models:
+
+- *center* of each variable (e.g., its mean) matters as well
+
+- Does not matter as much in KNN:
+
+- Person A (200 lbs, 6ft tall) vs Person B (202 lbs, 6ft tall)
+- Person A (200 lbs, 6ft tall) vs Person B (200 lbs, 8ft tall)
+
+Difference in weight is in the 10s, difference in height is fractions of a foot.
+
+### Data preprocessing: Standardization
+
+- The mean is used to center, the standard deviation is used to scale
+- Standardization: transform the data such that the mean is 0, and a standard deviation is 1
+
+```{python}
+unscaled_cancer = pd.read_csv("data/wdbc_unscaled.csv")[["Class", "Area", "Smoothness"]]
+unscaled_cancer["Class"] = unscaled_cancer["Class"].replace({
+   "M" : "Malignant",
+   "B" : "Benign"
+})
+unscaled_cancer
+```
+
+### `scikit-learn`: `ColumnTransformer`
+
+- `scikit-learn` has a [`preprocessing` module](https://scikit-learn.org/stable/modules/preprocessing.html)
+  - `StandardScaler()`: scale our data
+- [`make_column_transformer`](https://scikit-learn.org/stable/modules/generated/sklearn.compose.make_column_selector.html#sklearn.compose.make_column_selector): creates a [`ColumnTransformer`](https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html#sklearn.compose.ColumnTransformer) to select columns
+
+```{python}
+from sklearn.preprocessing import StandardScaler
+from sklearn.compose import make_column_transformer
+
+preprocessor = make_column_transformer(
+    (StandardScaler(), ["Area", "Smoothness"]),
+)
+preprocessor
+```
+
+### `scikit-learn`: Select numeric columns
+
+```{python}
+from sklearn.compose import make_column_selector
+
+preprocessor = make_column_transformer(
+    (StandardScaler(), make_column_selector(dtype_include="number")),
+)
+preprocessor
+```
+
+### `scikit-learn`: transform
+
+Scale the data
+
+```{python}
+preprocessor.fit(unscaled_cancer)
+scaled_cancer = preprocessor.transform(unscaled_cancer)
+```
+
+Compare unscaled vs scaled
+
+:::: {.columns}
+
+::: {.column width="50%"}
+```{python}
+print(unscaled_cancer)
+```
+:::
+
+
+::: {.column width="50%"}
+```{python}
+print(scaled_cancer)
+```
+:::
+
+::::
+
+### Visualize unstandarized vs standarized data
+
+:::: {.columns}
+
+::: {.column width="50%"}
+```{python}
+#| echo: false
+
+preprocessor_keep_all = make_column_transformer(
+    (StandardScaler(), make_column_selector(dtype_include="number")),
+    remainder="passthrough",
+    verbose_feature_names_out=False
+)
+preprocessor_keep_all.fit(unscaled_cancer)
+scaled_cancer_all = preprocessor_keep_all.transform(unscaled_cancer)
+scaled_cancer_all
+
+def class_dscp(x):
+    if x == "M":
+        return "Malignant"
+    elif x == "B":
+        return "Benign"
+    else:
+        return x
+
+
+attrs = ["Area", "Smoothness"]
+new_obs = pd.DataFrame({"Class": ["Unknown"], "Area": 400, "Smoothness": 0.135})
+unscaled_cancer["Class"] = unscaled_cancer["Class"].apply(class_dscp)
+area_smoothness_new_df = pd.concat((unscaled_cancer, new_obs), ignore_index=True)
+my_distances = euclidean_distances(area_smoothness_new_df[attrs])[
+    len(unscaled_cancer)
+][:-1]
+area_smoothness_new_point = (
+    alt.Chart(
+        area_smoothness_new_df,
+        title=alt.TitleParams(text="Unstandardized data", anchor="start"),
+    )
+    .mark_point(opacity=0.6, filled=True, size=40)
+    .encode(
+        x=alt.X("Area"),
+        y=alt.Y("Smoothness"),
+        color=alt.Color(
+            "Class",
+            title="Diagnosis",
+        ),
+        shape=alt.Shape(
+            "Class", scale=alt.Scale(range=["circle", "circle", "diamond"])
+        ),
+        size=alt.condition("datum.Class == 'Unknown'", alt.value(80), alt.value(30)),
+        stroke=alt.condition("datum.Class == 'Unknown'", alt.value("black"), alt.value(None))
+    )
+)
+
+# The index of 3 rows that has smallest distance to the new point
+min_3_idx = np.argpartition(my_distances, 3)[:3]
+neighbor1 = pd.concat([
+    unscaled_cancer.loc[[min_3_idx[0]], attrs],
+    new_obs[attrs],
+])
+neighbor2 = pd.concat([
+    unscaled_cancer.loc[[min_3_idx[1]], attrs],
+    new_obs[attrs],
+])
+neighbor3 = pd.concat([
+    unscaled_cancer.loc[[min_3_idx[2]], attrs],
+    new_obs[attrs],
+])
+
+line1 = (
+    alt.Chart(neighbor1)
+    .mark_line()
+    .encode(x="Area", y="Smoothness", color=alt.value("black"))
+)
+line2 = (
+    alt.Chart(neighbor2)
+    .mark_line()
+    .encode(x="Area", y="Smoothness", color=alt.value("black"))
+)
+line3 = (
+    alt.Chart(neighbor3)
+    .mark_line()
+    .encode(x="Area", y="Smoothness", color=alt.value("black"))
+)
+
+area_smoothness_new_point = area_smoothness_new_point + line1 + line2 + line3
+
+area_smoothness_new_point
+```
+:::
+
+
+::: {.column width="50%"}
+```{python}
+#| echo: false
+
+attrs = ["Area", "Smoothness"]
+new_obs_scaled = pd.DataFrame({"Class": ["Unknown"], "Area": -0.72, "Smoothness": 2.8})
+scaled_cancer_all["Class"] = scaled_cancer_all["Class"].apply(class_dscp)
+area_smoothness_new_df_scaled = pd.concat(
+    (scaled_cancer_all, new_obs_scaled), ignore_index=True
+)
+my_distances_scaled = euclidean_distances(area_smoothness_new_df_scaled[attrs])[
+    len(scaled_cancer_all)
+][:-1]
+area_smoothness_new_point_scaled = (
+    alt.Chart(
+        area_smoothness_new_df_scaled,
+        title=alt.TitleParams(text="Standardized data", anchor="start"),
+    )
+    .mark_point(opacity=0.6, filled=True, size=40)
+    .encode(
+        x=alt.X("Area", title="Area (standardized)"),
+        y=alt.Y("Smoothness", title="Smoothness (standardized)"),
+        color=alt.Color(
+            "Class",
+            title="Diagnosis",
+        ),
+        shape=alt.Shape(
+            "Class", scale=alt.Scale(range=["circle", "circle", "diamond"])
+        ),
+        size=alt.condition("datum.Class == 'Unknown'", alt.value(80), alt.value(30)),
+        stroke=alt.condition("datum.Class == 'Unknown'", alt.value("black"), alt.value(None))
+    )
+)
+min_3_idx_scaled = np.argpartition(my_distances_scaled, 3)[:3]
+neighbor1_scaled = pd.concat([
+    scaled_cancer_all.loc[[min_3_idx_scaled[0]], attrs],
+    new_obs_scaled[attrs],
+])
+neighbor2_scaled = pd.concat([
+    scaled_cancer_all.loc[[min_3_idx_scaled[1]], attrs],
+    new_obs_scaled[attrs],
+])
+neighbor3_scaled = pd.concat([
+    scaled_cancer_all.loc[[min_3_idx_scaled[2]], attrs],
+    new_obs_scaled[attrs],
+])
+
+line1_scaled = (
+    alt.Chart(neighbor1_scaled)
+    .mark_line()
+    .encode(x="Area", y="Smoothness", color=alt.value("black"))
+)
+line2_scaled = (
+    alt.Chart(neighbor2_scaled)
+    .mark_line()
+    .encode(x="Area", y="Smoothness", color=alt.value("black"))
+)
+line3_scaled = (
+    alt.Chart(neighbor3_scaled)
+    .mark_line()
+    .encode(x="Area", y="Smoothness", color=alt.value("black"))
+)
+
+area_smoothness_new_point_scaled = (
+    area_smoothness_new_point_scaled + line1_scaled + line2_scaled + line3_scaled
+)
+
+area_smoothness_new_point_scaled
+```
+:::
+
+::::
+
+### Why `scikit-learn` pipelines?
+
+- Manually standarizing is error prone
+- Does not automatically account for new data
+- Prevent data leakage by processing on training data to use on test data (later)
+- Need same mean and standarization from training to use on test / new data
+
+### Balancing + class imbalance
+
+What if we have class imbalance? i.e., if the response variable has a big difference
+in frequency counts between classes?
+
+```{python}
+rare_cancer = pd.concat((
+    cancer[cancer["Class"] == "Benign"],
+    cancer[cancer["Class"] == "Malignant"].head(3) # only 3 total
+))
+print(rare_cancer)
+```
+
+### Visualizing class imbalance
+
+```{python}
+rare_cancer["Class"].value_counts()
+```
+
+```{python}
+#| echo: false
+
+rare_plot = alt.Chart(rare_cancer).mark_circle().encode(
+    x=alt.X("Perimeter").title("Perimeter (standardized)"),
+    y=alt.Y("Concavity").title("Concavity (standardized)"),
+    color=alt.Color("Class").title("Diagnosis")
+)
+rare_plot
+```
+
+### Predicting with class imbalance
+
+```{python}
+#| echo: false
+
+attrs = ["Perimeter", "Concavity"]
+new_point = [2, 2]
+new_point_df = pd.DataFrame(
+    {"Class": ["Unknown"], "Perimeter": new_point[0], "Concavity": new_point[1]}
+)
+rare_cancer["Class"] = rare_cancer["Class"].apply(class_dscp)
+rare_cancer_with_new_df = pd.concat((rare_cancer, new_point_df), ignore_index=True)
+my_distances = euclidean_distances(rare_cancer_with_new_df[attrs])[
+    len(rare_cancer)
+][:-1]
+
+# First layer: scatter plot, with unknwon point labeled as red "unknown" diamond
+rare_plot = (
+    alt.Chart(
+        rare_cancer_with_new_df
+    )
+    .mark_point(opacity=0.6, filled=True, size=40)
+    .encode(
+        x=alt.X("Perimeter", title="Perimeter (standardized)"),
+        y=alt.Y("Concavity", title="Concavity (standardized)"),
+        color=alt.Color(
+            "Class",
+            title="Diagnosis",
+        ),
+        shape=alt.Shape(
+            "Class", scale=alt.Scale(range=["circle", "circle", "diamond"])
+        ),
+        size=alt.condition("datum.Class == 'Unknown'", alt.value(80), alt.value(30)),
+        stroke=alt.condition("datum.Class == 'Unknown'", alt.value("black"), alt.value(None))
+    )
+)
+
+# Find the 7 NNs
+min_7_idx = np.argpartition(my_distances, 7)[:7]
+
+# For loop: each iteration adds a line segment of corresponding color
+for i in range(7):
+    clr = "#1f77b4"
+    if rare_cancer.iloc[min_7_idx[i], :]["Class"] == "Malignant":
+        clr = "#ff7f0e"
+    neighbor = pd.concat([
+        rare_cancer.iloc[[min_7_idx[i]], :][attrs],
+        new_point_df[attrs],
+    ])
+    rare_plot = rare_plot + (
+        alt.Chart(neighbor)
+        .mark_line(opacity=0.3)
+        .encode(x="Perimeter", y="Concavity", color=alt.value(clr))
+    )
+
+rare_plot
+```
+
 ## References
 
 Lars Buitinck, Gilles Louppe, Mathieu Blondel, Fabian Pedregosa, Andreas Mueller, Olivier Grisel, Vlad Niculae, Peter Prettenhofer, Alexandre Gramfort, Jaques Grobler, Robert Layton, Jake VanderPlas, Arnaud Joly, Brian Holt, and Gaël Varoquaux. API design for machine learning software: experiences from the scikit-learn project. In ECML PKDD Workshop: Languages for Data Mining and Machine Learning, 108–122. 2013.
