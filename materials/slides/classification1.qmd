@@ -1,0 +1,510 @@
+---
+title: "Classification I: training & predicting"
+format:
+  revealjs:
+    slide-number: true
+    slide-level: 4
+    smaller: true
+    theme: simple
+jupyter: python3
+
+execute:
+  echo: true
+  warning: false
+
+editor:
+  render-on-save: true
+---
+
+```{python}
+#| include: false
+import pandas as pd
+pd.set_option('display.max_rows', 5)
+```
+
+## Session learning objectives
+
+By the end of the session, learners will be able to do the following:
+
+* Recognize situations where a simple classifier would be appropriate for making predictions.
+* Explain the $K$-nearest neighbour classification algorithm.
+* Interpret the output of a classifier.
+* Describe what a training data set is and how it is used in classification.
+* Given a dataset with two explanatory variables/predictors, use $K$-nearest neighbour classification in Python using the `scikit-learn` framework to predict the class of a single new observation.
+
+## The classification problem
+
+> predicting a categorical class (sometimes called a *label*) for an observation given its
+other variables (sometimes called *features*)
+
+
+- Diagnose a patient as healthy or sick
+- Tag an email as "spam" or "not spam"
+- Predict whether a purchase is fraudulent
+
+### Training set
+
+> Observations with known classes that we use as a basis for prediction
+
+- Assign an observation without a known class (e.g., a new patient)
+- To a class (e.g., diseased or healthy)
+
+How?
+
+- By similar it is to other observations for which we do know the class
+    - (e.g., previous patients with known diseases and symptoms)
+
+### K-nearest neighbors
+
+- One of many possible classification methods
+    - KNN, decision trees, support vector machines (SVMs),
+logistic regression, neural networks, and more;
+
+> Predict observations based on other observations "close" to it
+
+## Exploring a data set
+
+Data:
+
+- [digitized breast cancer image features](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29),
+created by Dr. William H. Wolberg, W. Nick Street, and Olvi L. Mangasarian
+
+- Each row:
+    - diagnosis (benign or malignant)
+    - several other measurements (nucleus texture, perimeter, area, and more)
+
+- Diagnosis for each image was conducted by physicians.
+
+*Formulate a predictive question*:
+
+> Can we use the tumor image measurements available to us to predict whether a future tumor image
+(with unknown diagnosis) shows a benign or malignant tumor?
+
+### Loading the cancer data
+
+```{python}
+import pandas as pd
+import altair as alt
+
+cancer = pd.read_csv("data/wdbc.csv")
+print(cancer)
+```
+
+> these values have been *standardized (centered and scaled)*
+
+### Describing the variables in the cancer data set
+
+1. ID: identification number
+2. Class: the diagnosis (M = malignant or B = benign)
+3. Radius: the mean of distances from center to points on the perimeter
+4. Texture: the standard deviation of gray-scale values
+5. Perimeter: the length of the surrounding contour
+6. Area: the area inside the contour
+7. Smoothness: the local variation in radius lengths
+8. Compactness: the ratio of squared perimeter and area
+9. Concavity: severity of concave portions of the contour
+10. Concave Points: the number of concave portions of the contour
+11. Symmetry: how similar the nucleus is when mirrored
+12. Fractal Dimension: a measurement of how "rough" the perimeter is
+
+### DataFrame; info
+
+```{python}
+cancer.info()
+```
+
+### Series; unique
+
+```{python}
+cancer["Class"].unique()
+```
+
+
+### Series; replace
+
+```{python}
+cancer["Class"] = cancer["Class"].replace({
+    "M" : "Malignant",
+    "B" : "Benign"
+})
+
+cancer["Class"].unique()
+```
+
+### Exploring the cancer data
+
+:::: {.columns}
+
+::: {.column width="50%"}
+```{python}
+cancer.info()
+```
+:::
+
+
+::: {.column width="50%"}
+```{python}
+cancer["Class"].value_counts()
+```
+
+```{python}
+cancer["Class"].value_counts(normalize=True)
+```
+:::
+
+::::
+
+### Visualization; scatter
+
+```{python}
+perim_concav = alt.Chart(cancer).mark_circle().encode(
+    x=alt.X("Perimeter").title("Perimeter (standardized)"),
+    y=alt.Y("Concavity").title("Concavity (standardized)"),
+    color=alt.Color("Class").title("Diagnosis")
+)
+perim_concav
+```
+
+- Malignant: upper right-hand corner
+- Benign: lower left-hand corner
+
+## Classification with K-nearest neighbors
+
+```{python}
+new_point = [2, 4]
+attrs = ["Perimeter", "Concavity"]
+
+points_df = pd.DataFrame(
+    {"Perimeter": new_point[0], "Concavity": new_point[1], "Class": ["Unknown"]}
+)
+
+perim_concav_with_new_point_df = pd.concat((cancer, points_df), ignore_index=True)
+print(perim_concav_with_new_point_df.iloc[[-1]])
+```
+
+> Compute the distance matrix between each pair from a vector array X and Y
+
+```{python}
+from sklearn.metrics.pairwise import euclidean_distances
+
+# distance of new point to all other points
+my_distances = euclidean_distances(perim_concav_with_new_point_df[attrs])[len(cancer)][:-1]
+```
+
+### Distances (`euclidean_distances()`)
+
+```{python}
+len(my_distances)
+```
+
+```{python}
+# distance of new point to all other points
+my_distances
+```
+
+
+### K-nearest neighbors; classification
+
+1. find the $K$ "nearest" or "most similar" observations in our training set
+2. predict new observation based on closest points
+
+### KNN Example: new point
+
+```{python}
+perim_concav_with_new_point = (
+    alt.Chart(perim_concav_with_new_point_df)
+    .mark_point(opacity=0.6, filled=True, size=40)
+    .encode(
+        x=alt.X("Perimeter").title("Perimeter (standardized)"),
+        y=alt.Y("Concavity").title("Concavity (standardized)"),
+        color=alt.Color("Class").title("Diagnosis"),
+        shape=alt.Shape("Class").scale(range=["circle", "circle", "diamond"]),
+        size=alt.condition("datum.Class == 'Unknown'", alt.value(100), alt.value(30)),
+        stroke=alt.condition("datum.Class == 'Unknown'", alt.value("black"), alt.value(None)),
+    )
+)
+
+perim_concav_with_new_point
+```
+
+### KNN example: closest point
+
+> if a point is close to another in the scatter plot,
+> then the perimeter and concavity values are similar,
+> and so we may expect that they would have the same diagnosis
+
+```{python}
+#| echo: false
+
+import numpy as np
+
+near_neighbor_df = pd.concat([
+    cancer.loc[[np.argmin(my_distances)], attrs],
+    perim_concav_with_new_point_df.loc[[cancer.shape[0]], attrs],
+])
+
+line = (
+    alt.Chart(near_neighbor_df)
+    .mark_line()
+    .encode(x="Perimeter", y="Concavity", color=alt.value("black"))
+)
+
+(perim_concav_with_new_point + line)
+```
+
+
+
+### KNN Example: another new point
+
+```{python}
+#| echo: false
+
+new_point = [0.2, 3.3]
+attrs = ["Perimeter", "Concavity"]
+points_df2 = pd.DataFrame(
+    {"Perimeter": new_point[0], "Concavity": new_point[1], "Class": ["Unknown"]}
+)
+perim_concav_with_new_point_df2 = pd.concat((cancer, points_df2), ignore_index=True)
+# Find the euclidean distances from the new point to each of the points
+# in the orginal data set
+my_distances2 = euclidean_distances(perim_concav_with_new_point_df2[attrs])[
+    len(cancer)
+][:-1]
+
+perim_concav_with_new_point2 = (
+    alt.Chart(
+        perim_concav_with_new_point_df2,
+    )
+    .mark_point(opacity=0.6, filled=True, size=40)
+    .encode(
+        x=alt.X("Perimeter", title="Perimeter (standardized)"),
+        y=alt.Y("Concavity", title="Concavity (standardized)"),
+        color=alt.Color(
+            "Class",
+            title="Diagnosis",
+        ),
+        shape=alt.Shape(
+            "Class", scale=alt.Scale(range=["circle", "circle", "diamond"])
+        ),
+        size=alt.condition("datum.Class == 'Unknown'", alt.value(80), alt.value(30)),
+        stroke=alt.condition("datum.Class == 'Unknown'", alt.value("black"), alt.value(None)),
+    )
+)
+
+near_neighbor_df2 = pd.concat([
+    cancer.loc[[np.argmin(my_distances2)], attrs],
+    perim_concav_with_new_point_df2.loc[[cancer.shape[0]], attrs],
+])
+line2 = alt.Chart(near_neighbor_df2).mark_line().encode(
+    x="Perimeter",
+    y="Concavity",
+    color=alt.value("black")
+)
+
+(perim_concav_with_new_point2 + line2)
+```
+
+### KNN: improve the prediction with `k`
+
+we can consider several neighboring points, `k=3`
+
+```{python}
+#| echo: false
+
+# The index of 3 rows that has smallest distance to the new point
+min_3_idx = np.argpartition(my_distances2, 3)[:3]
+near_neighbor_df3 = pd.concat([
+    cancer.loc[[min_3_idx[1]], attrs],
+    perim_concav_with_new_point_df2.loc[[cancer.shape[0]], attrs],
+])
+near_neighbor_df4 = pd.concat([
+    cancer.loc[[min_3_idx[2]], attrs],
+    perim_concav_with_new_point_df2.loc[[cancer.shape[0]], attrs],
+])
+
+line3 = alt.Chart(near_neighbor_df3).mark_line().encode(
+    x="Perimeter",
+    y="Concavity",
+    color=alt.value("black")
+)
+line4 = alt.Chart(near_neighbor_df4).mark_line().encode(
+    x="Perimeter",
+    y="Concavity",
+    color=alt.value("black")
+)
+
+(perim_concav_with_new_point2 + line2 + line3 + line4)
+```
+
+### Distance between points
+
+$$\mathrm{Distance} = \sqrt{(a_x -b_x)^2 + (a_y - b_y)^2}$$
+
+### Distance between points: `k=5`
+
+>  3 of the 5 nearest neighbors to our new observation are malignant
+
+```{python}
+#| echo: false
+new_point = [0, 3.5]
+attrs = ["Perimeter", "Concavity"]
+points_df3 = pd.DataFrame(
+    {"Perimeter": new_point[0], "Concavity": new_point[1], "Class": ["Unknown"]}
+)
+perim_concav_with_new_point_df3 = pd.concat((cancer, points_df3), ignore_index=True)
+perim_concav_with_new_point3 = (
+    alt.Chart(
+        perim_concav_with_new_point_df3,
+    )
+    .mark_point(opacity=0.6, filled=True, size=40)
+    .encode(
+        x=alt.X("Perimeter", title="Perimeter (standardized)"),
+        y=alt.Y("Concavity", title="Concavity (standardized)"),
+        color=alt.Color(
+            "Class",
+            title="Diagnosis",
+        ),
+        shape=alt.Shape(
+            "Class", scale=alt.Scale(range=["circle", "circle", "diamond"])
+        ),
+        size=alt.condition("datum.Class == 'Unknown'", alt.value(80), alt.value(30)),
+        stroke=alt.condition("datum.Class == 'Unknown'", alt.value("black"), alt.value(None)),
+    )
+)
+
+
+circle_path_df = pd.DataFrame(
+    {
+        "Perimeter": new_point[0] + 1.4 * np.cos(np.linspace(0, 2 * np.pi, 100)),
+        "Concavity": new_point[1] + 1.4 * np.sin(np.linspace(0, 2 * np.pi, 100)),
+    }
+)
+circle = alt.Chart(circle_path_df.reset_index()).mark_line(color="black").encode(
+    x="Perimeter",
+    y="Concavity",
+    order="index"
+)
+
+(perim_concav_with_new_point3 + circle)
+```
+
+### More than two explanatory variables: distance formula
+
+The distance formula becomes
+
+$$\mathrm{Distance} = \sqrt{(a_{1} -b_{1})^2 + (a_{2} - b_{2})^2 + \dots + (a_{m} - b_{m})^2}.$$
+
+
+### More than two explanatory variables: visualize
+
+```{python}
+#| echo: false
+
+import plotly.express as px
+import plotly.graph_objects as go
+
+new_obs_Perimeter = 0
+new_obs_Concavity = 3.5
+new_obs_Symmetry = 1
+cancer["dist_from_new"] = (
+      (cancer["Perimeter"] - new_obs_Perimeter) ** 2
+    + (cancer["Concavity"] - new_obs_Concavity) ** 2
+    + (cancer["Symmetry"] - new_obs_Symmetry) ** 2
+)**(1/2)
+cancer.nsmallest(5, "dist_from_new")[[
+    "Perimeter",
+    "Concavity",
+    "Symmetry",
+    "Class",
+    "dist_from_new"
+]]
+
+new_point = [0, 3.5, 1]
+attrs = ["Perimeter", "Concavity", "Symmetry"]
+points_df4 = pd.DataFrame(
+    {
+        "Perimeter": new_point[0],
+        "Concavity": new_point[1],
+        "Symmetry": new_point[2],
+        "Class": ["Unknown"],
+    }
+)
+perim_concav_with_new_point_df4 = pd.concat((cancer, points_df4), ignore_index=True)
+# Find the euclidean distances from the new point to each of the points
+# in the orginal data set
+my_distances4 = euclidean_distances(perim_concav_with_new_point_df4[attrs])[
+    len(cancer)
+][:-1]
+
+# The index of 5 rows that has smallest distance to the new point
+min_5_idx = np.argpartition(my_distances4, 5)[:5]
+
+neighbor_df_list = []
+for idx in min_5_idx:
+    neighbor_df = pd.concat(
+        (
+            cancer.loc[idx, attrs + ["Class"]],
+            perim_concav_with_new_point_df4.loc[len(cancer), attrs + ["Class"]],
+        ),
+        axis=1,
+    ).T
+    neighbor_df_list.append(neighbor_df)
+
+fig = px.scatter_3d(
+    perim_concav_with_new_point_df4,
+    x="Perimeter",
+    y="Concavity",
+    z="Symmetry",
+    color="Class",
+    symbol="Class",
+    opacity=0.5,
+)
+# specify trace names and symbols in a dict
+symbols = {"Malignant": "circle", "Benign": "circle", "Unknown": "diamond"}
+
+# set all symbols in fig
+for i, d in enumerate(fig.data):
+    fig.data[i].marker.symbol = symbols[fig.data[i].name]
+
+# specify trace names and colors in a dict
+colors = {"Malignant": "#ff7f0e", "Benign": "#1f77b4", "Unknown": "red"}
+
+# set all colors in fig
+for i, d in enumerate(fig.data):
+    fig.data[i].marker.color = colors[fig.data[i].name]
+
+# set a fixed custom marker size
+fig.update_traces(marker={"size": 5})
+
+# add lines
+for neighbor_df in neighbor_df_list:
+    fig.add_trace(
+        go.Scatter3d(
+            x=neighbor_df["Perimeter"],
+            y=neighbor_df["Concavity"],
+            z=neighbor_df["Symmetry"],
+            line_color=colors[neighbor_df.iloc[0]["Class"]],
+            name=neighbor_df.iloc[0]["Class"],
+            mode="lines",
+            line=dict(width=2),
+            showlegend=False,
+        )
+    )
+
+
+# tight layout
+fig.update_layout(margin=dict(l=0, r=0, b=0, t=1), template="plotly_white")
+
+```
+
+## References
+
+Lars Buitinck, Gilles Louppe, Mathieu Blondel, Fabian Pedregosa, Andreas Mueller, Olivier Grisel, Vlad Niculae, Peter Prettenhofer, Alexandre Gramfort, Jaques Grobler, Robert Layton, Jake VanderPlas, Arnaud Joly, Brian Holt, and Gaël Varoquaux. API design for machine learning software: experiences from the scikit-learn project. In ECML PKDD Workshop: Languages for Data Mining and Machine Learning, 108–122. 2013.
+
+Thomas Cover and Peter Hart. Nearest neighbor pattern classification. IEEE Transactions on Information Theory, 13(1):21–27, 1967.
+
+Evelyn Fix and Joseph Hodges. Discriminatory analysis. nonparametric discrimination: consistency properties. Technical Report, USAF School of Aviation Medicine, Randolph Field, Texas, 1951.
+
+William Nick Street, William Wolberg, and Olvi Mangasarian. Nuclear feature extraction for breast tumor diagnosis. In International Symposium on Electronic Imaging: Science and Technology. 1993.
+
+Stanford Health Care. What is cancer? 2021. URL: https://stanfordhealthcare.org/medical-conditions/cancer/cancer.html.
