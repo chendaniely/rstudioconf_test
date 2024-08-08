@@ -1,0 +1,28 @@
+---
+title: "Regression"
+subtitle: "K-NN and Linear Regression"
+format:
+  revealjs:
+    slide-number: true
+    slide-level: 4
+    smaller: true
+    theme: simple
+jupyter: python3
+
+execute:
+  echo: true
+  warning: false
+
+editor:
+  render-on-save: true
+---
+
+```{python}
+#| include: false
+import pandas as pd
+pd.set_option('display.max_rows', 5)
+```
+
+## Session learning objectives
+
+By the end of the session, learners will be able to do the following:
