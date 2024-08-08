@@ -17,9 +17,10 @@ editor:
 ---
 
 ```{python}
-#| include: false
+# | include: false
 import pandas as pd
-pd.set_option('display.max_rows', 5)
+
+pd.set_option("display.max_rows", 7)
 ```
 
 ## Session learning objectives
@@ -27,10 +28,12 @@ pd.set_option('display.max_rows', 5)
 By the end of the session, learners will be able to do the following:
 
 * Recognize situations where a simple classifier would be appropriate for making predictions.
-* Explain the $K$-nearest neighbour classification algorithm.
+* Explain the $K$-nearest neighbor classification algorithm.
 * Interpret the output of a classifier.
 * Describe what a training data set is and how it is used in classification.
-* Given a dataset with two explanatory variables/predictors, use $K$-nearest neighbour classification in Python using the `scikit-learn` framework to predict the class of a single new observation.
+* Given a dataset with two explanatory variables/predictors,
+  use $K$-nearest neighbor classification in Python using
+  the `scikit-learn` framework to predict the class of a single new observation.
 
 ## The classification problem
 
@@ -609,7 +612,9 @@ unscaled_cancer
 
 - `scikit-learn` has a [`preprocessing` module](https://scikit-learn.org/stable/modules/preprocessing.html)
   - `StandardScaler()`: scale our data
-- [`make_column_transformer`](https://scikit-learn.org/stable/modules/generated/sklearn.compose.make_column_selector.html#sklearn.compose.make_column_selector): creates a [`ColumnTransformer`](https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html#sklearn.compose.ColumnTransformer) to select columns
+- [`make_column_transformer`](https://scikit-learn.org/stable/modules/generated/sklearn.compose.make_column_selector.html#sklearn.compose.make_column_selector):
+  creates a [`ColumnTransformer`](https://scikit-learn.org/stable/modules/generated/sklearn.compose.ColumnTransformer.html#sklearn.compose.ColumnTransformer)
+  to select columns
 
 ```{python}
 from sklearn.preprocessing import StandardScaler
@@ -864,6 +869,9 @@ rare_plot
 
 ### Predicting with class imbalance
 
+:::: {.columns}
+
+::: {.column width="50%"}
 ```{python}
 #| echo: false
 
@@ -919,6 +927,430 @@ for i in range(7):
 
 rare_plot
 ```
+
+:::
+
+::: {.column width="50%"}
+```{python}
+# | echo: false
+
+knn = KNeighborsClassifier(n_neighbors=7)
+knn.fit(X=rare_cancer[["Perimeter", "Concavity"]], y=rare_cancer["Class"])
+
+# create a prediction pt grid
+per_grid = np.linspace(
+    rare_cancer["Perimeter"].min() * 1.05,
+    rare_cancer["Perimeter"].max() * 1.05,
+    50,
+)
+con_grid = np.linspace(
+    rare_cancer["Concavity"].min() * 1.05,
+    rare_cancer["Concavity"].max() * 1.05,
+    50,
+)
+pcgrid = np.array(np.meshgrid(per_grid, con_grid)).reshape(2, -1).T
+pcgrid = pd.DataFrame(pcgrid, columns=["Perimeter", "Concavity"])
+pcgrid
+
+knnPredGrid = knn.predict(pcgrid)
+prediction_table = pcgrid.copy()
+prediction_table["Class"] = knnPredGrid
+prediction_table
+
+# create the scatter plot
+rare_plot = (
+    alt.Chart(
+        rare_cancer,
+    )
+    .mark_point(opacity=0.6, filled=True, size=40)
+    .encode(
+        x=alt.X("Perimeter", title="Perimeter (standardized)"),
+        y=alt.Y("Concavity", title="Concavity (standardized)"),
+        color=alt.Color("Class", title="Diagnosis"),
+    )
+)
+
+# add a prediction layer, also scatter plot
+prediction_plot = (
+    alt.Chart(
+        prediction_table,
+        title="Imbalanced data",
+    )
+    .mark_point(opacity=0.05, filled=True, size=300)
+    .encode(
+        x=alt.X(
+            "Perimeter",
+            title="Perimeter (standardized)",
+            scale=alt.Scale(
+                domain=(
+                    rare_cancer["Perimeter"].min() * 1.05,
+                    rare_cancer["Perimeter"].max() * 1.05,
+                ),
+                nice=False,
+            ),
+        ),
+        y=alt.Y(
+            "Concavity",
+            title="Concavity (standardized)",
+            scale=alt.Scale(
+                domain=(
+                    rare_cancer["Concavity"].min() * 1.05,
+                    rare_cancer["Concavity"].max() * 1.05,
+                ),
+                nice=False,
+            ),
+        ),
+        color=alt.Color("Class", title="Diagnosis"),
+    )
+)
+
+(rare_plot + prediction_plot)
+```
+
+:::
+
+::::
+
+### Upsampling
+
+Rebalance the data by *oversampling* the rare class
+
+1. Separate the classes out into their own data frames by filtering
+2. Use the `.sample()` method on the rare class data frame
+    - Sample with replacement so the classes are the same size
+3. Use the `.value_counts()` method to see that our classes are now balanced
+
+### Upsampling: code
+
+Set seed
+```{python}
+import numpy as np
+
+np.random.seed(42)
+```
+
+Upsample the rare class
+
+```{python}
+malignant_cancer = rare_cancer[rare_cancer["Class"] == "Malignant"]
+benign_cancer = rare_cancer[rare_cancer["Class"] == "Benign"]
+malignant_cancer_upsample = malignant_cancer.sample(
+    n=benign_cancer.shape[0], replace=True
+)
+upsampled_cancer = pd.concat((malignant_cancer_upsample, benign_cancer))
+upsampled_cancer["Class"].value_counts()
+
+```
+
+### Upsampling: Re-train KNN `k=7`
+
+::: {.columns}
+::: {.column}
+```{python}
+#| echo: false
+
+(rare_plot + prediction_plot)
+```
+
+:::
+
+::: {.column}
+```{python}
+#| echo: false
+
+knn = KNeighborsClassifier(n_neighbors=7)
+knn.fit(
+    X=upsampled_cancer[["Perimeter", "Concavity"]], y=upsampled_cancer["Class"]
+)
+
+# create a prediction pt grid
+knnPredGrid = knn.predict(pcgrid)
+prediction_table = pcgrid
+prediction_table["Class"] = knnPredGrid
+
+# create the scatter plot
+rare_plot = (
+    alt.Chart(rare_cancer)
+    .mark_point(opacity=0.6, filled=True, size=40)
+    .encode(
+        x=alt.X(
+            "Perimeter",
+            title="Perimeter (standardized)",
+            scale=alt.Scale(
+                domain=(
+                    rare_cancer["Perimeter"].min() * 1.05,
+                    rare_cancer["Perimeter"].max() * 1.05,
+                ),
+                nice=False,
+            ),
+        ),
+        y=alt.Y(
+            "Concavity",
+            title="Concavity (standardized)",
+            scale=alt.Scale(
+                domain=(
+                    rare_cancer["Concavity"].min() * 1.05,
+                    rare_cancer["Concavity"].max() * 1.05,
+                ),
+                nice=False,
+            ),
+        ),
+        color=alt.Color("Class", title="Diagnosis"),
+    )
+)
+
+# add a prediction layer, also scatter plot
+upsampled_plot = (
+    alt.Chart(prediction_table)
+    .mark_point(opacity=0.05, filled=True, size=300)
+    .encode(
+        x=alt.X("Perimeter", title="Perimeter (standardized)"),
+        y=alt.Y("Concavity", title="Concavity (standardized)"),
+        color=alt.Color("Class", title="Diagnosis"),
+    )
+)
+
+(rare_plot + upsampled_plot)
+```
+
+:::
+:::
+
+## Missing data
+
+Assume we are only looking at "randomly missing" data
+
+```{python}
+missing_cancer = pd.read_csv("data/wdbc_missing.csv")[
+    ["Class", "Radius", "Texture", "Perimeter"]
+]
+missing_cancer["Class"] = missing_cancer["Class"].replace(
+    {"M": "Malignant", "B": "Benign"}
+)
+print(missing_cancer)
+```
+
+### Missing data: `.dropna()`
+
+KNN computes distances across all the features, it needs complete observations
+
+```{python}
+# drop incomplete observations
+no_missing_cancer = missing_cancer.dropna()
+print(no_missing_cancer)
+```
+
+### Missing data: `SimpleImputer()`
+
+We can impute missing data (with the mean) if there's too many missing values
+
+```{python}
+from sklearn.impute import SimpleImputer
+
+preprocessor = make_column_transformer(
+    (SimpleImputer(), ["Radius", "Texture", "Perimeter"]),
+    verbose_feature_names_out=False,
+)
+preprocessor
+```
+
+### Imputed data
+
+```{python}
+preprocessor.fit(missing_cancer)
+imputed_cancer = preprocessor.transform(missing_cancer)
+
+```
+
+::: {.columns}
+::: {.column}
+
+```{python}
+print(missing_cancer)
+```
+
+:::
+::: {.column}
+
+```{python}
+print(imputed_cancer)
+```
+
+:::
+:::
+
+## Put it all together: Preprocessor
+
+```{python}
+# load the unscaled cancer data, make Class readable
+unscaled_cancer = pd.read_csv("data/wdbc_unscaled.csv")
+unscaled_cancer["Class"] = unscaled_cancer["Class"].replace(
+    {"M": "Malignant", "B": "Benign"}
+)
+
+# create the K-NN model
+knn = KNeighborsClassifier(n_neighbors=7)
+
+# create the centering / scaling preprocessor
+preprocessor = make_column_transformer(
+    (StandardScaler(), ["Area", "Smoothness"]),
+    # more column transformers here
+)
+
+```
+
+### Put it all together: Pipeline
+
+```{python}
+from sklearn.pipeline import make_pipeline
+
+knn_pipeline = make_pipeline(preprocessor, knn)
+knn_pipeline.fit(
+    X=unscaled_cancer,
+    y=unscaled_cancer["Class"]
+)
+knn_pipeline
+```
+
+### Put it all together: Predict
+
+```{python}
+new_observation = pd.DataFrame(
+    {"Area": [500, 1500], "Smoothness": [0.075, 0.1]}
+)
+prediction = knn_pipeline.predict(new_observation)
+prediction
+```
+
+### Prediction Area
+
+Model prediction area.
+
+```{python}
+#| echo: false
+
+import numpy as np
+
+# create the grid of area/smoothness vals, and arrange in a data frame
+are_grid = np.linspace(
+    unscaled_cancer["Area"].min() * 0.95, unscaled_cancer["Area"].max() * 1.05, 50
+)
+smo_grid = np.linspace(
+    unscaled_cancer["Smoothness"].min() * 0.95, unscaled_cancer["Smoothness"].max() * 1.05, 50
+)
+asgrid = np.array(np.meshgrid(are_grid, smo_grid)).reshape(2, -1).T
+asgrid = pd.DataFrame(asgrid, columns=["Area", "Smoothness"])
+
+# use the fit workflow to make predictions at the grid points
+knnPredGrid = knn_pipeline.predict(asgrid)
+
+# bind the predictions as a new column with the grid points
+prediction_table = asgrid.copy()
+prediction_table["Class"] = knnPredGrid
+
+# plot:
+# 1. the colored scatter of the original data
+unscaled_plot = alt.Chart(unscaled_cancer).mark_point(
+    opacity=0.6,
+    filled=True,
+    size=40
+).encode(
+    x=alt.X("Area")
+        .scale(
+            nice=False,
+            domain=(
+                unscaled_cancer["Area"].min() * 0.95,
+                unscaled_cancer["Area"].max() * 1.05
+            )
+        ),
+    y=alt.Y("Smoothness")
+        .scale(
+            nice=False,
+            domain=(
+                unscaled_cancer["Smoothness"].min() * 0.95,
+                unscaled_cancer["Smoothness"].max() * 1.05
+            )
+        ),
+    color=alt.Color("Class").title("Diagnosis")
+)
+
+# 2. the faded colored scatter for the grid points
+prediction_plot = alt.Chart(prediction_table).mark_point(
+    opacity=0.05,
+    filled=True,
+    size=300
+).encode(
+    x="Area",
+    y="Smoothness",
+    color=alt.Color("Class").title("Diagnosis")
+)
+
+(unscaled_plot + prediction_plot)
+```
+
+- Points are on original unscaled data
+- Area is using the pipeline model
+
+## Reference Code {.smaller}
+
+::: {.columns}
+::: {.column}
+
+```{python}
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.compose import (
+    make_column_transformer,
+)
+
+
+# load the unscaled cancer data
+unscaled_cancer = pd.read_csv(
+    "data/wdbc_unscaled.csv"
+)
+
+# make Class readable
+unscaled_cancer["Class"] = unscaled_cancer[
+    "Class"
+].replace({"M": "Malignant", "B": "Benign"})
+
+```
+
+:::
+::: {.column}
+
+```{python}
+# create the K-NN model
+knn = KNeighborsClassifier(n_neighbors=7)
+
+# create the centering / scaling preprocessor
+preprocessor = make_column_transformer(
+    (StandardScaler(), ["Area", "Smoothness"]),
+    # more column transformers here
+)
+
+knn_pipeline = make_pipeline(preprocessor, knn)
+knn_pipeline.fit(
+    X=unscaled_cancer, y=unscaled_cancer["Class"]
+)
+knn_pipeline
+
+new_observation = pd.DataFrame(
+    {
+        "Area": [500, 1500],
+        "Smoothness": [0.075, 0.1],
+    }
+)
+prediction = knn_pipeline.predict(new_observation)
+prediction
+
+```
+
+:::
+:::
+
 
 ## References
 
