@@ -2,4 +2,7 @@ altair
 lightgbm
 matplotlib
 pandas
+plotnine
+plotly
+seaborn
 scikit-learn
