@@ -507,7 +507,7 @@ print(cv_10_df)
 
 ```{python}
 cv_10_metrics = cv_10_df.agg(["mean", "sem"])
-cv_10_metrics
+cv_10_metrics['test_score']
 ```
 :::
 ::::

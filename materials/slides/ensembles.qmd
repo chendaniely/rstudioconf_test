@@ -1,5 +1,5 @@
 ---
-title: "Ensemble models"
+title: "Tree-based and ensemble models"
 format: 
   revealjs:
     slide-number: true
@@ -110,6 +110,11 @@ from sklearn.model_selection import train_test_split
 heart_train, heart_test = train_test_split(
     heart, train_size=0.75, stratify=heart["AHD"]
 )
+
+X_train = heart_train.drop(columns=['AHD'])
+y_train = heart_train['AHD']
+X_test = heart_test.drop(columns=['AHD'])
+y_test = heart_test['AHD']
 ```
 
 ## One hot encoding & pre-processing
@@ -129,6 +134,33 @@ heart_preprocessor = make_column_transformer(
 )
 ```
 
+
+## Fitting a dummy classifier
+
+```{python}
+from sklearn.dummy import DummyClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_validate
+
+dummy = DummyClassifier()
+dummy_pipeline = make_pipeline(heart_preprocessor, dummy)
+cv_10_dummy = pd.DataFrame(
+    cross_validate(
+        estimator=dummy_pipeline,
+        cv=10,
+        X=X_train,
+        y=y_train
+    )
+)
+cv_10_dummy_metrics = cv_10_dummy.agg(["mean", "sem"])
+results = pd.DataFrame({'mean' : [cv_10_dummy_metrics.test_score.iloc[0]],
+  'sem' : [cv_10_dummy_metrics.test_score.iloc[1]]},
+  index = ['Dummy classifier']
+)
+results
+```
+
+
 ## Fitting a decision tree
 
 ```{python}
@@ -137,75 +169,146 @@ from sklearn.pipeline import make_pipeline
 
 decision_tree = DecisionTreeClassifier()
 
-X = heart_train.drop(columns=['AHD'])
-y = heart_train['AHD']
-
 dt_pipeline = make_pipeline(heart_preprocessor, decision_tree)
-dt_pipeline.fit(X, y)
-```
-
-## How did we do
-
-- change this to CV error!
-
-Let's predict on the test set:
-
-:::: {.columns}
-::: {.column width="50%"}
-```{python}
-# Accuracy
-heart_test['predicted'] = dt_pipeline.predict(heart_test.drop(columns=['AHD']))
-dt_pipeline.score(
-    heart_test.drop(columns=['AHD']),
-    heart_test["AHD"]
+cv_10_dt = pd.DataFrame(
+    cross_validate(
+        estimator=dt_pipeline,
+        cv=10,
+        X=X_train,
+        y=y_train
+    )
 )
-```
-
-```{python}
-from sklearn.metrics import recall_score, precision_score
-
-# Precision
-precision_score(
-    y_true=heart_test['AHD'],
-    y_pred=heart_test['predicted'],
-    pos_label='Yes'
+cv_10_dt_metrics = cv_10_dt.agg(["mean", "sem"])
+results_dt = pd.DataFrame({'mean' : [cv_10_dt_metrics.test_score.iloc[0]],
+  'sem' : [cv_10_dt_metrics.test_score.iloc[1]]},
+  index = ['Decision tree']
 )
+results = pd.concat([results, results_dt])
+results
 ```
-
-```{python}
-# Recall
-recall_score(
-    y_true=heart_test['AHD'],
-    y_pred=heart_test['predicted'],
-    pos_label='Yes'
-)
-```
-:::
-
-::: {.column width="50%"}
-```{python}
-conf_matrix = pd.crosstab(
-    heart_test['AHD'],
-    heart_test['predicted']
-)
-print(conf_matrix)
-```
-
-```{python}
-# Majority classifier
-heart_train['AHD'].value_counts(normalize=True)
-```
-:::
-::::
 
 ## Can we do better?
+
+- We could tune some decision tree parameters 
+  (e.g., Gini impurity, maximum tree depth, etc)...
+
+- We could also try a different tree-based method!
 
 - [The Random Forest Algorithm](https://mlu-explain.github.io/random-forest/) 
   by Jenny Yeon & Jared Wilber
   
+## Random forest in `scikit-learn` & missing values
+
+:::: {.columns}
+::: {.column width="35%"}
+- Does not accept missing values, we need to deal with these somehow...
+
+- We can either drop the observations with missing values, 
+  or we can somehow impute them.
+
+- For the purposes of this demo we will drop them, 
+  but if you are interested in imputation, 
+  see the imputation tutorial in 
+  [`scikit-learn`](https://scikit-learn.org/stable/modules/impute.html)
+:::
+
+::: {.column width="50%"}
+How many rows have missing observations:
+
+```{python}
+heart.isna().any(axis=1).sum()
+```
+
+Drop rows with missing observations:
+
+```{python}
+heart_train_drop_na = heart_train.dropna()
+
+X_train_drop_na = heart_train_drop_na.drop(columns=['AHD'])
+y_train_drop_na = heart_train_drop_na['AHD']
+```
+:::
+::::
+
 ## Random forest in `scikit-learn`
 
-- TBD
+```{python}
+from sklearn.ensemble import RandomForestClassifier
+
+random_forest = RandomForestClassifier()
+
+rf_pipeline = make_pipeline(heart_preprocessor, random_forest)
+cv_10_rf = pd.DataFrame(
+    cross_validate(
+        estimator=rf_pipeline,
+        cv=10,
+        X=X_train_drop_na,
+        y=y_train_drop_na
+    )
+)
+
+cv_10_rf_metrics = cv_10_rf.agg(["mean", "sem"])
+results_rf = pd.DataFrame({'mean' : [cv_10_rf_metrics.test_score.iloc[0]],
+  'sem' : [cv_10_rf_metrics.test_score.iloc[1]]},
+  index = ['Random forest']
+)
+results = pd.concat([results, results_rf])
+results
+```
+
+## Can we do better?
+
+- Random forest can be tuned a several important parameters, including:
+
+  - `n_estimators`: number of decision trees (higher = more complexity)
+
+  - `max_depth`: max depth of each decision tree (higher = more complexity)
+
+  - `max_features`: the number of features you get to look at each split 
+  (higher = more complexity)
+  
+- We can use `GridSearchCV` to search for the optimal parameters for these,
+  as we did for $K$ in $K$-nearest neighbors.
+
+## Tuning random forest in `scikit-learn`
+
+```{python}
+from sklearn.model_selection import GridSearchCV
+
+random_forest_tuned = RandomForestClassifier()
+rf_tuned_pipeline = make_pipeline(heart_preprocessor, random_forest_tuned)
+
+rf_param_grid = {'randomforestclassifier__n_estimators': [100, 150, 200, 250],
+              'randomforestclassifier__max_depth': [1, 3, 5, 7, 9],
+              'randomforestclassifier__max_features': [1, 2, 3, 4, 5, 6, 7]}
+
+rf_tune_grid = GridSearchCV(
+    estimator=rf_tuned_pipeline,
+    param_grid=rf_param_grid,
+    cv=10,
+    n_jobs=-1 # tells computer to use all available CPUs
+)
+
+rf_tune_grid.fit(
+    X_train_drop_na,
+    y_train_drop_na
+)
+
+accuracies_grid = pd.DataFrame(rf_tune_grid.cv_results_)
+accuracies_grid.info()
+```
+
+```{python}
+accuracies_grid = pd.DataFrame(rf_tune_grid.cv_results_)
+#accuracies_grid.info()
+accuracies_grid[['param_randomforestclassifier__max_depth', 
+'param_randomforestclassifier__max_features',
+'param_randomforestclassifier__n_estimators',
+'mean_test_score',
+'std_test_score']]
+#accuracies_grid[['param_randomforestclassifier__max_depth', 'mean_test_score']]
+rf_tune_grid.best_params_
+```
 
 ## Boosting
 
