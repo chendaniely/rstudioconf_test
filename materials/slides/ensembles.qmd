@@ -272,18 +272,17 @@ results
 
 ## Tuning random forest in `scikit-learn`
 
+:::: {.columns}
+::: {.column width="60%"}
 ```{python}
 from sklearn.model_selection import GridSearchCV
-
-random_forest_tuned = RandomForestClassifier()
-rf_tuned_pipeline = make_pipeline(heart_preprocessor, random_forest_tuned)
 
 rf_param_grid = {'randomforestclassifier__n_estimators': [100, 150, 200, 250],
               'randomforestclassifier__max_depth': [1, 3, 5, 7, 9],
               'randomforestclassifier__max_features': [1, 2, 3, 4, 5, 6, 7]}
 
 rf_tune_grid = GridSearchCV(
-    estimator=rf_tuned_pipeline,
+    estimator=rf_pipeline,
     param_grid=rf_param_grid,
     cv=10,
     n_jobs=-1 # tells computer to use all available CPUs
@@ -294,21 +293,21 @@ rf_tune_grid.fit(
     y_train_drop_na
 )
 
-accuracies_grid = pd.DataFrame(rf_tune_grid.cv_results_)
-accuracies_grid.info()
+cv_10_rf_tuned_metrics = pd.DataFrame(rf_tune_grid.cv_results_)
+results_rf_tuned = pd.DataFrame({'mean' : rf_tune_grid.best_score_,
+  'sem' : pd.DataFrame(rf_tune_grid.cv_results_)['std_test_score'][6] / 10**(1/2)},
+  index = ['Random forest tuned']
+)
+results = pd.concat([results, results_rf_tuned])
 ```
+:::
 
+::: {.column width="40%"}
 ```{python}
-accuracies_grid = pd.DataFrame(rf_tune_grid.cv_results_)
-#accuracies_grid.info()
-accuracies_grid[['param_randomforestclassifier__max_depth', 
-'param_randomforestclassifier__max_features',
-'param_randomforestclassifier__n_estimators',
-'mean_test_score',
-'std_test_score']]
-#accuracies_grid[['param_randomforestclassifier__max_depth', 'mean_test_score']]
-rf_tune_grid.best_params_
+results
 ```
+:::
+::::
 
 ## Boosting
 

@@ -10,7 +10,7 @@
 <link href="ensembles_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles"><meta charset="utf-8">
   <meta name="generator" content="quarto-1.5.54">
 
-  <title>Ensemble models</title>
+  <title>Tree-based and ensemble models</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -393,7 +393,7 @@
     <div class="slides">
 
 <section id="title-slide" class="quarto-title-block center">
-  <h1 class="title">Ensemble models</h1>
+  <h1 class="title">Tree-based and ensemble models</h1>
 
 <div class="quarto-title-authors">
 </div>
@@ -426,7 +426,7 @@ by Jared Wilber &amp; Lucía Santamaría</li>
 <li><p>The <a href="https://www.statlearning.com/s/Heart.csv">heart data set</a> contains a binary outcome for heart disease for patients who presented with chest pain.</p></li>
 </ul>
 </div><div class="column" style="width:50%;">
-<div id="35f8197b" class="cell" data-execution_count="2">
+<div id="6a92410d" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href=""></a>heart <span class="op">=</span> pd.read_csv(<span class="st">"data/Heart.csv"</span>, index_col<span class="op">=</span><span class="dv">0</span>)</span>
 <span id="cb1-2"><a href=""></a>heart.info()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -461,9 +461,9 @@ memory usage: 35.5+ KB</code></pre>
 <ul>
 <li>An angiographic test was performed and a label for <code>AHD</code> of Yes was labelled to indicate the presence of heart disease, otherwise the label was No.</li>
 </ul>
-<div id="16d02570" class="cell" data-execution_count="3">
+<div id="9802614e" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href=""></a>heart.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="64">
+<div class="cell-output cell-output-display" data-execution_count="3">
 <div>
 <style scoped="">
     .dataframe tbody tr th:only-of-type {
@@ -596,9 +596,9 @@ memory usage: 35.5+ KB</code></pre>
 <section id="do-we-have-a-class-imbalance" class="title-slide slide level2 center">
 <h2>Do we have a class imbalance?</h2>
 <p>It’s always important to check this, as it may impact your splitting and/or modeling decisions.</p>
-<div id="d7438b7d" class="cell" data-execution_count="4">
+<div id="4792abe5" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href=""></a>heart[<span class="st">'AHD'</span>].value_counts(normalize<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="65">
+<div class="cell-output cell-output-display" data-execution_count="4">
 <pre><code>AHD
 No     0.541254
 Yes    0.458746
@@ -625,7 +625,7 @@ Name: proportion, dtype: float64</code></pre>
 <section id="data-splitting" class="title-slide slide level2 center">
 <h2>Data splitting</h2>
 <p>Let’s split the data into training and test sets:</p>
-<div id="2ba9d239" class="cell" data-execution_count="5">
+<div id="b142b3d1" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href=""></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split</span>
 <span id="cb6-2"><a href=""></a></span>
 <span id="cb6-3"><a href=""></a>heart_train, heart_test <span class="op">=</span> train_test_split(</span>
@@ -633,13 +633,15 @@ Name: proportion, dtype: float64</code></pre>
 <span id="cb6-5"><a href=""></a>)</span>
 <span id="cb6-6"><a href=""></a></span>
 <span id="cb6-7"><a href=""></a>X_train <span class="op">=</span> heart_train.drop(columns<span class="op">=</span>[<span class="st">'AHD'</span>])</span>
-<span id="cb6-8"><a href=""></a>y_train <span class="op">=</span> heart_train[<span class="st">'AHD'</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-8"><a href=""></a>y_train <span class="op">=</span> heart_train[<span class="st">'AHD'</span>]</span>
+<span id="cb6-9"><a href=""></a>X_test <span class="op">=</span> heart_test.drop(columns<span class="op">=</span>[<span class="st">'AHD'</span>])</span>
+<span id="cb6-10"><a href=""></a>y_test <span class="op">=</span> heart_test[<span class="st">'AHD'</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 
 <section id="one-hot-encoding-pre-processing" class="title-slide slide level2 center">
 <h2>One hot encoding &amp; pre-processing</h2>
-<div id="a7cda50f" class="cell" data-execution_count="6">
+<div id="10248976" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href=""></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler, OneHotEncoder</span>
 <span id="cb7-2"><a href=""></a><span class="im">from</span> sklearn.compose <span class="im">import</span> make_column_transformer, make_column_selector</span>
 <span id="cb7-3"><a href=""></a></span>
@@ -657,7 +659,7 @@ Name: proportion, dtype: float64</code></pre>
 
 <section id="fitting-a-dummy-classifier" class="title-slide slide level2 center">
 <h2>Fitting a dummy classifier</h2>
-<div id="74f2206e" class="cell" data-execution_count="7">
+<div id="48040df2" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href=""></a><span class="im">from</span> sklearn.dummy <span class="im">import</span> DummyClassifier</span>
 <span id="cb8-2"><a href=""></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> make_pipeline</span>
 <span id="cb8-3"><a href=""></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> cross_validate</span>
@@ -678,7 +680,7 @@ Name: proportion, dtype: float64</code></pre>
 <span id="cb8-18"><a href=""></a>  index <span class="op">=</span> [<span class="st">'Dummy classifier'</span>]</span>
 <span id="cb8-19"><a href=""></a>)</span>
 <span id="cb8-20"><a href=""></a>results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="68">
+<div class="cell-output cell-output-display" data-execution_count="7">
 <div>
 <style scoped="">
     .dataframe tbody tr th:only-of-type {
@@ -718,30 +720,29 @@ Name: proportion, dtype: float64</code></pre>
 
 <section id="fitting-a-decision-tree" class="title-slide slide level2 center">
 <h2>Fitting a decision tree</h2>
-<div id="af6cff07" class="cell" data-execution_count="8">
+<div id="c7e4de6d" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href=""></a><span class="im">from</span> sklearn.tree <span class="im">import</span> DecisionTreeClassifier</span>
 <span id="cb9-2"><a href=""></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> make_pipeline</span>
 <span id="cb9-3"><a href=""></a></span>
 <span id="cb9-4"><a href=""></a>decision_tree <span class="op">=</span> DecisionTreeClassifier()</span>
 <span id="cb9-5"><a href=""></a></span>
 <span id="cb9-6"><a href=""></a>dt_pipeline <span class="op">=</span> make_pipeline(heart_preprocessor, decision_tree)</span>
-<span id="cb9-7"><a href=""></a><span class="co">#dt_pipeline.fit(X_train, y_train)</span></span>
-<span id="cb9-8"><a href=""></a>cv_10_dt <span class="op">=</span> pd.DataFrame(</span>
-<span id="cb9-9"><a href=""></a>    cross_validate(</span>
-<span id="cb9-10"><a href=""></a>        estimator<span class="op">=</span>dt_pipeline,</span>
-<span id="cb9-11"><a href=""></a>        cv<span class="op">=</span><span class="dv">10</span>,</span>
-<span id="cb9-12"><a href=""></a>        X<span class="op">=</span>X_train,</span>
-<span id="cb9-13"><a href=""></a>        y<span class="op">=</span>y_train</span>
-<span id="cb9-14"><a href=""></a>    )</span>
-<span id="cb9-15"><a href=""></a>)</span>
-<span id="cb9-16"><a href=""></a>cv_10_dt_metrics <span class="op">=</span> cv_10_dt.agg([<span class="st">"mean"</span>, <span class="st">"sem"</span>])</span>
-<span id="cb9-17"><a href=""></a>results_dt <span class="op">=</span> pd.DataFrame({<span class="st">'mean'</span> : [cv_10_dt_metrics.test_score.iloc[<span class="dv">0</span>]],</span>
-<span id="cb9-18"><a href=""></a>  <span class="st">'sem'</span> : [cv_10_dt_metrics.test_score.iloc[<span class="dv">1</span>]]},</span>
-<span id="cb9-19"><a href=""></a>  index <span class="op">=</span> [<span class="st">'Decision tree'</span>]</span>
-<span id="cb9-20"><a href=""></a>)</span>
-<span id="cb9-21"><a href=""></a>results <span class="op">=</span> pd.concat([results, results_dt])</span>
-<span id="cb9-22"><a href=""></a>results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="69">
+<span id="cb9-7"><a href=""></a>cv_10_dt <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb9-8"><a href=""></a>    cross_validate(</span>
+<span id="cb9-9"><a href=""></a>        estimator<span class="op">=</span>dt_pipeline,</span>
+<span id="cb9-10"><a href=""></a>        cv<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb9-11"><a href=""></a>        X<span class="op">=</span>X_train,</span>
+<span id="cb9-12"><a href=""></a>        y<span class="op">=</span>y_train</span>
+<span id="cb9-13"><a href=""></a>    )</span>
+<span id="cb9-14"><a href=""></a>)</span>
+<span id="cb9-15"><a href=""></a>cv_10_dt_metrics <span class="op">=</span> cv_10_dt.agg([<span class="st">"mean"</span>, <span class="st">"sem"</span>])</span>
+<span id="cb9-16"><a href=""></a>results_dt <span class="op">=</span> pd.DataFrame({<span class="st">'mean'</span> : [cv_10_dt_metrics.test_score.iloc[<span class="dv">0</span>]],</span>
+<span id="cb9-17"><a href=""></a>  <span class="st">'sem'</span> : [cv_10_dt_metrics.test_score.iloc[<span class="dv">1</span>]]},</span>
+<span id="cb9-18"><a href=""></a>  index <span class="op">=</span> [<span class="st">'Decision tree'</span>]</span>
+<span id="cb9-19"><a href=""></a>)</span>
+<span id="cb9-20"><a href=""></a>results <span class="op">=</span> pd.concat([results, results_dt])</span>
+<span id="cb9-21"><a href=""></a>results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="8">
 <div>
 <style scoped="">
     .dataframe tbody tr th:only-of-type {
@@ -773,8 +774,8 @@ Name: proportion, dtype: float64</code></pre>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">Decision tree</td>
-<td>0.695850</td>
-<td>0.031287</td>
+<td>0.700593</td>
+<td>0.038078</td>
 </tr>
 </tbody>
 </table>
@@ -787,17 +788,209 @@ Name: proportion, dtype: float64</code></pre>
 <section id="can-we-do-better" class="title-slide slide level2 center">
 <h2>Can we do better?</h2>
 <ul>
-<li><p>We could tune some decision tree parameters (e.g., depth and entropy)</p></li>
+<li><p>We could tune some decision tree parameters (e.g., Gini impurity, maximum tree depth, etc)…</p></li>
 <li><p>We could also try a different tree-based method!</p></li>
 <li><p><a href="https://mlu-explain.github.io/random-forest/">The Random Forest Algorithm</a> by Jenny Yeon &amp; Jared Wilber</p></li>
 </ul>
 </section>
 
+<section id="random-forest-in-scikit-learn-missing-values" class="title-slide slide level2 center">
+<h2>Random forest in <code>scikit-learn</code> &amp; missing values</h2>
+<div class="columns">
+<div class="column" style="width:35%;">
+<ul>
+<li><p>Does not accept missing values, we need to deal with these somehow…</p></li>
+<li><p>We can either drop the observations with missing values, or we can somehow impute them.</p></li>
+<li><p>For the purposes of this demo we will drop them, but if you are interested in imputation, see the imputation tutorial in <a href="https://scikit-learn.org/stable/modules/impute.html"><code>scikit-learn</code></a></p></li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p>How many rows have missing observations:</p>
+<div id="32d2a77e" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href=""></a>heart.isna().<span class="bu">any</span>(axis<span class="op">=</span><span class="dv">1</span>).<span class="bu">sum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="9">
+<pre><code>6</code></pre>
+</div>
+</div>
+<p>Drop rows with missing observations:</p>
+<div id="3c1fd8c1" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href=""></a>heart_train_drop_na <span class="op">=</span> heart_train.dropna()</span>
+<span id="cb12-2"><a href=""></a></span>
+<span id="cb12-3"><a href=""></a>X_train_drop_na <span class="op">=</span> heart_train_drop_na.drop(columns<span class="op">=</span>[<span class="st">'AHD'</span>])</span>
+<span id="cb12-4"><a href=""></a>y_train_drop_na <span class="op">=</span> heart_train_drop_na[<span class="st">'AHD'</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div></div>
+</section>
+
 <section id="random-forest-in-scikit-learn" class="title-slide slide level2 center">
 <h2>Random forest in <code>scikit-learn</code></h2>
+<div id="556e2878" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href=""></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> RandomForestClassifier</span>
+<span id="cb13-2"><a href=""></a></span>
+<span id="cb13-3"><a href=""></a>random_forest <span class="op">=</span> RandomForestClassifier()</span>
+<span id="cb13-4"><a href=""></a></span>
+<span id="cb13-5"><a href=""></a>rf_pipeline <span class="op">=</span> make_pipeline(heart_preprocessor, random_forest)</span>
+<span id="cb13-6"><a href=""></a>cv_10_rf <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb13-7"><a href=""></a>    cross_validate(</span>
+<span id="cb13-8"><a href=""></a>        estimator<span class="op">=</span>rf_pipeline,</span>
+<span id="cb13-9"><a href=""></a>        cv<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb13-10"><a href=""></a>        X<span class="op">=</span>X_train_drop_na,</span>
+<span id="cb13-11"><a href=""></a>        y<span class="op">=</span>y_train_drop_na</span>
+<span id="cb13-12"><a href=""></a>    )</span>
+<span id="cb13-13"><a href=""></a>)</span>
+<span id="cb13-14"><a href=""></a></span>
+<span id="cb13-15"><a href=""></a>cv_10_rf_metrics <span class="op">=</span> cv_10_rf.agg([<span class="st">"mean"</span>, <span class="st">"sem"</span>])</span>
+<span id="cb13-16"><a href=""></a>results_rf <span class="op">=</span> pd.DataFrame({<span class="st">'mean'</span> : [cv_10_rf_metrics.test_score.iloc[<span class="dv">0</span>]],</span>
+<span id="cb13-17"><a href=""></a>  <span class="st">'sem'</span> : [cv_10_rf_metrics.test_score.iloc[<span class="dv">1</span>]]},</span>
+<span id="cb13-18"><a href=""></a>  index <span class="op">=</span> [<span class="st">'Random forest'</span>]</span>
+<span id="cb13-19"><a href=""></a>)</span>
+<span id="cb13-20"><a href=""></a>results <span class="op">=</span> pd.concat([results, results_rf])</span>
+<span id="cb13-21"><a href=""></a>results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="11">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+<table class="dataframe caption-top" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header" style="text-align: right;">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">mean</th>
+<th data-quarto-table-cell-role="th">sem</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">Dummy classifier</td>
+<td>0.541897</td>
+<td>0.006051</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">Decision tree</td>
+<td>0.700593</td>
+<td>0.038078</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">Random forest</td>
+<td>0.800988</td>
+<td>0.026764</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</section>
+
+<section id="can-we-do-better-1" class="title-slide slide level2 center">
+<h2>Can we do better?</h2>
 <ul>
-<li>TBD</li>
+<li><p>Random forest can be tuned a several important parameters, including:</p>
+<ul>
+<li><p><code>n_estimators</code>: number of decision trees (higher = more complexity)</p></li>
+<li><p><code>max_depth</code>: max depth of each decision tree (higher = more complexity)</p></li>
+<li><p><code>max_features</code>: the number of features you get to look at each split (higher = more complexity)</p></li>
+</ul></li>
+<li><p>We can use <code>GridSearchCV</code> to search for the optimal parameters for these, as we did for <span class="math inline">\(K\)</span> in <span class="math inline">\(K\)</span>-nearest neighbors.</p></li>
 </ul>
+</section>
+
+<section id="tuning-random-forest-in-scikit-learn" class="title-slide slide level2 center">
+<h2>Tuning random forest in <code>scikit-learn</code></h2>
+<div class="columns">
+<div class="column" style="width:60%;">
+<div id="304330fe" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href=""></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GridSearchCV</span>
+<span id="cb14-2"><a href=""></a></span>
+<span id="cb14-3"><a href=""></a>rf_param_grid <span class="op">=</span> {<span class="st">'randomforestclassifier__n_estimators'</span>: [<span class="dv">100</span>, <span class="dv">150</span>, <span class="dv">200</span>, <span class="dv">250</span>],</span>
+<span id="cb14-4"><a href=""></a>              <span class="st">'randomforestclassifier__max_depth'</span>: [<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">7</span>, <span class="dv">9</span>],</span>
+<span id="cb14-5"><a href=""></a>              <span class="st">'randomforestclassifier__max_features'</span>: [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>, <span class="dv">7</span>]}</span>
+<span id="cb14-6"><a href=""></a></span>
+<span id="cb14-7"><a href=""></a>rf_tune_grid <span class="op">=</span> GridSearchCV(</span>
+<span id="cb14-8"><a href=""></a>    estimator<span class="op">=</span>rf_pipeline,</span>
+<span id="cb14-9"><a href=""></a>    param_grid<span class="op">=</span>rf_param_grid,</span>
+<span id="cb14-10"><a href=""></a>    cv<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb14-11"><a href=""></a>    n_jobs<span class="op">=-</span><span class="dv">1</span> <span class="co"># tells computer to use all available CPUs</span></span>
+<span id="cb14-12"><a href=""></a>)</span>
+<span id="cb14-13"><a href=""></a></span>
+<span id="cb14-14"><a href=""></a>rf_tune_grid.fit(</span>
+<span id="cb14-15"><a href=""></a>    X_train_drop_na,</span>
+<span id="cb14-16"><a href=""></a>    y_train_drop_na</span>
+<span id="cb14-17"><a href=""></a>)</span>
+<span id="cb14-18"><a href=""></a></span>
+<span id="cb14-19"><a href=""></a>cv_10_rf_tuned_metrics <span class="op">=</span> pd.DataFrame(rf_tune_grid.cv_results_)</span>
+<span id="cb14-20"><a href=""></a>results_rf_tuned <span class="op">=</span> pd.DataFrame({<span class="st">'mean'</span> : rf_tune_grid.best_score_,</span>
+<span id="cb14-21"><a href=""></a>  <span class="st">'sem'</span> : pd.DataFrame(rf_tune_grid.cv_results_)[<span class="st">'std_test_score'</span>][<span class="dv">6</span>] <span class="op">/</span> <span class="dv">10</span><span class="op">**</span>(<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>)},</span>
+<span id="cb14-22"><a href=""></a>  index <span class="op">=</span> [<span class="st">'Random forest tuned'</span>]</span>
+<span id="cb14-23"><a href=""></a>)</span>
+<span id="cb14-24"><a href=""></a>results <span class="op">=</span> pd.concat([results, results_rf_tuned])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div><div class="column" style="width:40%;">
+<div id="8cd95e23" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href=""></a>results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="13">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+<table class="dataframe caption-top" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header" style="text-align: right;">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">mean</th>
+<th data-quarto-table-cell-role="th">sem</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">Dummy classifier</td>
+<td>0.541897</td>
+<td>0.006051</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">Decision tree</td>
+<td>0.700593</td>
+<td>0.038078</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">Random forest</td>
+<td>0.800988</td>
+<td>0.026764</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">Random forest tuned</td>
+<td>0.832806</td>
+<td>0.027830</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</div></div>
 </section>
 
 <section id="boosting" class="title-slide slide level2 center">
