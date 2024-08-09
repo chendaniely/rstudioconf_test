@@ -1327,21 +1327,19 @@ knn = KNeighborsClassifier(n_neighbors=7)
 
 # create the centering / scaling preprocessor
 preprocessor = make_column_transformer(
-    (StandardScaler(), ["Area", "Smoothness"]),
-    # more column transformers here
+	(StandardScaler(), ['Area', 'Smoothness']),
+	# more column transformers here
 )
 
 knn_pipeline = make_pipeline(preprocessor, knn)
-knn_pipeline.fit(
-    X=unscaled_cancer, y=unscaled_cancer["Class"]
-)
+knn_pipeline.fit(X=unscaled_cancer, y=unscaled_cancer['Class'])
 knn_pipeline
 
 new_observation = pd.DataFrame(
-    {
-        "Area": [500, 1500],
-        "Smoothness": [0.075, 0.1],
-    }
+	{
+		'Area': [500, 1500],
+		'Smoothness': [0.075, 0.1],
+	}
 )
 prediction = knn_pipeline.predict(new_observation)
 prediction
