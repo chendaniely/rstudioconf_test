@@ -272,8 +272,6 @@ results
 
 ## Tuning random forest in `scikit-learn`
 
-:::: {.columns}
-::: {.column width="60%"}
 ```{python}
 from sklearn.model_selection import GridSearchCV
 
@@ -300,17 +298,131 @@ results_rf_tuned = pd.DataFrame({'mean' : rf_tune_grid.best_score_,
 )
 results = pd.concat([results, results_rf_tuned])
 ```
-:::
 
-::: {.column width="40%"}
+## Random Forest results
+
+How did the Random Forest compare 
+against the other models we tried?
+
 ```{python}
 results
 ```
-:::
-::::
 
 ## Boosting
 
-- TBD
+- No randomization.
 
-## Boosting with `lightgbm`
+- The key idea is combining many simple models called weak learners, 
+  to create a strong learner.
+
+- They combine multiple shallow (depth 1 to 5) decision trees.
+
+- They build trees in a serial manner, 
+  where each tree tries to correct the mistakes of the previous one.
+
+## Tuning `GradientBoostingClassifier` with `scikit-learn`
+
+- `GradientBoostingClassifier` can be tuned a several important parameters, including:
+
+  - `n_estimators`: number of decision trees (higher = more complexity)
+
+  - `max_depth`: max depth of each decision tree (higher = more complexity)
+
+  - `learning_rate`: the shrinkage parameter which controls the rate 
+  at which boosting learns. Values between 0.01 or 0.001 are typical. 
+  
+- We can use `GridSearchCV` to search for the optimal parameters for these,
+  as we did for the parameters in Random Forest.
+
+## Tuning `GradientBoostingClassifier` with `scikit-learn`
+
+```{python}
+from sklearn.ensemble import GradientBoostingClassifier
+
+gradient_boosted_classifier = GradientBoostingClassifier()
+gb_pipeline = make_pipeline(heart_preprocessor, gradient_boosted_classifier)
+
+gb_param_grid = {'gradientboostingclassifier__n_estimators': [200, 400, 600, 800],
+              'gradientboostingclassifier__max_depth': [1, 3, 5, 7, 9],
+              'gradientboostingclassifier__learning_rate': [0.001, 0.005, 0.01]}
+
+gb_tune_grid = GridSearchCV(
+    estimator=gb_pipeline,
+    param_grid=gb_param_grid,
+    cv=10,
+    n_jobs=-1 # tells computer to use all available CPUs
+)
+
+gb_tune_grid.fit(
+    X_train_drop_na,
+    y_train_drop_na
+)
+
+cv_10_gb_tuned_metrics = pd.DataFrame(gb_tune_grid.cv_results_)
+results_gb_tuned = pd.DataFrame({'mean' : gb_tune_grid.best_score_,
+  'sem' : pd.DataFrame(gb_tune_grid.cv_results_)['std_test_score'][6] / 10**(1/2)},
+  index = ['Gradient boosted classifier tuned']
+)
+results = pd.concat([results, results_gb_tuned])
+```
+
+## `GradientBoostingClassifier` results
+
+How did the `GradientBoostingClassifier` compare 
+against the other models we tried?
+
+```{python}
+results
+```
+
+## How do we choose the final model?
+
+- Remember, what is your question or application? 
+
+- 
+
+## Other boosting models:
+
+[XGBoost](https://lightgbm.readthedocs.io/)
+
+- Not part of `sklearn` but has similar interface.
+- Supports missing values
+- GPU training, networked parallel training
+- Supports sparse data
+- Typically better scores than random forests
+
+[LightGBM](https://lightgbm.readthedocs.io/)
+
+- Not part of sklearn but has similar interface.
+- Small model size
+- Faster
+- Typically better scores than random forests
+
+[CatBoost](https://catboost.ai/)
+- Not part of sklearn but has similar interface.
+- Usually better scores but slower compared to XGBoost and LightGBM
+
+## Additional resources
+
+- The [UBC DSCI 573 (Feature and Model Selection notes)](https://ubc-mds.github.io/DSCI_573_feat-model-select)
+  chapter of Data Science: A First Introduction (Python Edition) by 
+  Varada Kolhatkar and Joel Ostblom. These notes cover classification and regression metrics,
+  advanced variable selection and more on ensembles.
+- The [`scikit-learn` website](https://scikit-learn.org/stable/) is an excellent
+  reference for more details on, and advanced usage of, the functions and
+  packages in the past two chapters. Aside from that, it also offers many
+  useful [tutorials](https://scikit-learn.org/stable/tutorial/index.html)
+  to get you started. 
+- [*An Introduction to Statistical Learning*](https://www.statlearning.com/) {cite:p}`james2013introduction` provides
+  a great next stop in the process of
+  learning about classification. Chapter 4 discusses additional basic techniques
+  for classification that we do not cover, such as logistic regression, linear
+  discriminant analysis, and naive Bayes.
+
+## References
+
+Gareth James, Daniela Witten, Trevor Hastie, Robert Tibshirani and Jonathan Taylor. An Introduction to Statistical Learning with Applications in Python. Springer, 1st edition, 2023. URL: https://www.statlearning.com/.
+
+Kolhatkar, V., and Ostblom, J. (2024). UBC DSCI 573: Feature and Model Selection course notes. URL: https://ubc-mds.github.io/DSCI_573_feat-model-select
+
+Pedregosa, F. et al., 2011. Scikit-learn: Machine learning in Python. Journal of machine learning research, 12(Oct), pp.2825–2830.
