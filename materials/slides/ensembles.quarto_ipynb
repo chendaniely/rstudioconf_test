@@ -1,0 +1,934 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Tree-based and ensemble models\"\n",
+        "format: \n",
+        "  revealjs:\n",
+        "    slide-number: true\n",
+        "    slide-level: 4\n",
+        "    smaller: true\n",
+        "    theme: simple\n",
+        "jupyter: python3\n",
+        "execute:\n",
+        "  echo: true\n",
+        "  warning: false\n",
+        "---"
+      ],
+      "id": "57404046"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| include: false\n",
+        "import pandas as pd\n",
+        "pd.set_option('display.max_rows', 5)"
+      ],
+      "id": "02524edc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Tree-based methods\n",
+        "\n",
+        "- Algorithms that stratifying or segmenting the predictor space\n",
+        "  into a number of simple regions.\n",
+        "\n",
+        "- We call these algorithms decision-tree methods \n",
+        " because the decisions used to segment the predictor space \n",
+        " can be summarized in a tree.\n",
+        " \n",
+        "- Decision trees on their own, are very explainable and intuitive,\n",
+        "  but not very powerful at predicting. \n",
+        "  \n",
+        "- However, there are extensions of decision trees, \n",
+        "  such as random forest and boosted trees,\n",
+        "  which are very powerful at predicting. \n",
+        "  We will demonstrate two of these in this session.\n",
+        "\n",
+        "## Decision trees\n",
+        "\n",
+        "- [Decision Trees](https://mlu-explain.github.io/decision-tree/)  \n",
+        "  by Jared Wilber & Lucía Santamaría\n",
+        "\n",
+        "## Classification Decision trees\n",
+        "\n",
+        "- Use recursive binary splitting to grow a classification tree\n",
+        "  (splitting of the predictor space into $J$ distinct, non-overlapping regions).\n",
+        "\n",
+        "-  For every observation that falls into the region $R_j$ , \n",
+        "  we make the same prediction, \n",
+        "  which is the majority vote for the training observations in $R_j$.\n",
+        "  \n",
+        "- Where to split the predictor space is done in a top-down and greedy manner,\n",
+        "  and in practice for classification, the best split at any point in the algorithm\n",
+        "  is one that minimizes the Gini index (a measure of node purity).\n",
+        "  \n",
+        "- Decision trees are useful because they are very interpretable.\n",
+        "\n",
+        "- A limitation of decision trees is that theyn tend to overfit, \n",
+        "  so in practice we use cross-validation to tune a hyperparameter, \n",
+        "  $\\alpha$, to find the optimal, pruned tree.\n",
+        "\n",
+        "## Example: the heart data set\n",
+        "\n",
+        ":::: {.columns}\n",
+        "::: {.column width=\"50%\"}\n",
+        "- Let's consider a situation where we'd like to be able to predict \n",
+        "  the presence of heart disease (`AHD`) in patients, \n",
+        "  based off 13 measured characteristics.\n",
+        "\n",
+        "- The [heart data set](https://www.statlearning.com/s/Heart.csv) \n",
+        "  contains a binary outcome for heart disease \n",
+        "  for patients who presented with chest pain.\n",
+        ":::\n",
+        "\n",
+        "::: {.column width=\"50%\"}"
+      ],
+      "id": "cc742224"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import pandas as pd\n",
+        "heart = pd.read_csv(\"data/Heart.csv\", index_col=0)\n",
+        "heart.info()"
+      ],
+      "id": "b3a842da",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        ":::\n",
+        "::::\n",
+        "\n",
+        "## Example: the heart data set\n",
+        "\n",
+        "- An angiographic test was performed and a label for `AHD` of Yes\n",
+        "  was labelled to indicate the presence of heart disease,\n",
+        "  otherwise the label was No.\n"
+      ],
+      "id": "e05155de"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "heart.head()"
+      ],
+      "id": "d04fa31a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Do we have a class imbalance?\n",
+        "\n",
+        "It's always important to check this, as it may impact your splitting \n",
+        "and/or modeling decisions.\n"
+      ],
+      "id": "6ea1494a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "heart['AHD'].value_counts(normalize=True)"
+      ],
+      "id": "f669015c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "This looks pretty good! \n",
+        "We can move forward this time without doing much more about this.\n",
+        "\n",
+        "## Categorical variables\n",
+        "\n",
+        ":::: {.columns}\n",
+        "::: {.column width=\"35%\"}\n",
+        "- This is our first case of seeing categorical predictor variables, \n",
+        "can we treat them the same as numerical ones? **No!** \n",
+        "\n",
+        "- In `scikit-learn` we must perform **one-hot encoding**\n",
+        ":::\n",
+        "\n",
+        "::: {.column width=\"65%\"}\n",
+        "![](https://scales.arabpsychology.com/wp-content/uploads/2024/05/onehot1-1-1.png)\n",
+        "\n",
+        "*Source: <https://scales.arabpsychology.com/stats/how-can-i-perform-one-hot-encoding-in-r/>*\n",
+        ":::\n",
+        "::::\n",
+        "\n",
+        "## Data splitting\n",
+        "\n",
+        "Let's split the data into training and test sets:\n"
+      ],
+      "id": "69facdd4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import numpy as np\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "\n",
+        "np.random.seed(2024)\n",
+        "\n",
+        "heart_train, heart_test = train_test_split(\n",
+        "    heart, train_size=0.8, stratify=heart[\"AHD\"]\n",
+        ")\n",
+        "\n",
+        "X_train = heart_train.drop(columns=['AHD'])\n",
+        "y_train = heart_train['AHD']\n",
+        "X_test = heart_test.drop(columns=['AHD'])\n",
+        "y_test = heart_test['AHD']"
+      ],
+      "id": "0c34ccb4",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## One hot encoding & pre-processing\n"
+      ],
+      "id": "322e8ce4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from sklearn.preprocessing import StandardScaler, OneHotEncoder\n",
+        "from sklearn.compose import make_column_transformer, make_column_selector\n",
+        "\n",
+        "numeric_feats = ['Age', 'RestBP', 'Chol', 'RestECG', 'MaxHR', 'Oldpeak','Slope', 'Ca']\n",
+        "passthrough_feats = ['Sex', 'Fbs', 'ExAng']\n",
+        "categorical_feats = ['ChestPain', 'Thal']\n",
+        "\n",
+        "heart_preprocessor = make_column_transformer(\n",
+        "    (StandardScaler(), numeric_feats), \n",
+        "    (\"passthrough\", passthrough_feats),     \n",
+        "    (OneHotEncoder(handle_unknown = \"ignore\"), categorical_feats),     \n",
+        ")"
+      ],
+      "id": "784776d0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Fitting a dummy classifier\n"
+      ],
+      "id": "9b21c8b3"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from sklearn.dummy import DummyClassifier\n",
+        "from sklearn.pipeline import make_pipeline\n",
+        "from sklearn.model_selection import cross_validate\n",
+        "\n",
+        "dummy = DummyClassifier()\n",
+        "dummy_pipeline = make_pipeline(heart_preprocessor, dummy)\n",
+        "cv_10_dummy = pd.DataFrame(\n",
+        "    cross_validate(\n",
+        "        estimator=dummy_pipeline,\n",
+        "        cv=10,\n",
+        "        X=X_train,\n",
+        "        y=y_train\n",
+        "    )\n",
+        ")\n",
+        "cv_10_dummy_metrics = cv_10_dummy.agg([\"mean\", \"sem\"])\n",
+        "results = pd.DataFrame({'mean' : [cv_10_dummy_metrics.test_score.iloc[0]],\n",
+        "  'sem' : [cv_10_dummy_metrics.test_score.iloc[1]]},\n",
+        "  index = ['Dummy classifier']\n",
+        ")\n",
+        "results"
+      ],
+      "id": "e1cc6126",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Fitting a decision tree\n"
+      ],
+      "id": "d332324a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from sklearn.tree import DecisionTreeClassifier\n",
+        "\n",
+        "decision_tree = DecisionTreeClassifier()\n",
+        "\n",
+        "dt_pipeline = make_pipeline(heart_preprocessor, decision_tree)\n",
+        "cv_10_dt = pd.DataFrame(\n",
+        "    cross_validate(\n",
+        "        estimator=dt_pipeline,\n",
+        "        cv=10,\n",
+        "        X=X_train,\n",
+        "        y=y_train\n",
+        "    )\n",
+        ")\n",
+        "cv_10_dt_metrics = cv_10_dt.agg([\"mean\", \"sem\"])\n",
+        "results_dt = pd.DataFrame({'mean' : [cv_10_dt_metrics.test_score.iloc[0]],\n",
+        "  'sem' : [cv_10_dt_metrics.test_score.iloc[1]]},\n",
+        "  index = ['Decision tree']\n",
+        ")\n",
+        "results = pd.concat([results, results_dt])\n",
+        "results"
+      ],
+      "id": "e8923ede",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Can we do better?\n",
+        "\n",
+        "- We could tune some decision tree parameters \n",
+        "  (e.g., Gini impurity, maximum tree depth, etc)...\n",
+        "\n",
+        "- We could also try a different tree-based method!\n",
+        "\n",
+        "- [The Random Forest Algorithm](https://mlu-explain.github.io/random-forest/) \n",
+        "  by Jenny Yeon & Jared Wilber\n",
+        "  \n",
+        "## Random forest in `scikit-learn` & missing values\n",
+        "\n",
+        ":::: {.columns}\n",
+        "::: {.column width=\"35%\"}\n",
+        "- Does not accept missing values, we need to deal with these somehow...\n",
+        "\n",
+        "- We can either drop the observations with missing values, \n",
+        "  or we can somehow impute them.\n",
+        "\n",
+        "- For the purposes of this demo we will drop them, \n",
+        "  but if you are interested in imputation, \n",
+        "  see the imputation tutorial in \n",
+        "  [`scikit-learn`](https://scikit-learn.org/stable/modules/impute.html)\n",
+        ":::\n",
+        "\n",
+        "::: {.column width=\"50%\"}\n",
+        "How many rows have missing observations:\n"
+      ],
+      "id": "810e35dd"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "heart.isna().any(axis=1).sum()"
+      ],
+      "id": "b697e2e8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Drop rows with missing observations:\n"
+      ],
+      "id": "496b026e"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "heart_train_drop_na = heart_train.dropna()\n",
+        "\n",
+        "X_train_drop_na = heart_train_drop_na.drop(columns=['AHD'])\n",
+        "y_train_drop_na = heart_train_drop_na['AHD']"
+      ],
+      "id": "84207a3f",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        ":::\n",
+        "::::\n",
+        "\n",
+        "## Random forest in `scikit-learn`\n"
+      ],
+      "id": "dabb8e03"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from sklearn.ensemble import RandomForestClassifier\n",
+        "\n",
+        "random_forest = RandomForestClassifier()\n",
+        "rf_pipeline = make_pipeline(heart_preprocessor, random_forest)\n",
+        "cv_10_rf = pd.DataFrame(\n",
+        "    cross_validate(\n",
+        "        estimator=rf_pipeline,\n",
+        "        cv=10,\n",
+        "        X=X_train_drop_na,\n",
+        "        y=y_train_drop_na\n",
+        "    )\n",
+        ")\n",
+        "\n",
+        "cv_10_rf_metrics = cv_10_rf.agg([\"mean\", \"sem\"])\n",
+        "results_rf = pd.DataFrame({'mean' : [cv_10_rf_metrics.test_score.iloc[0]],\n",
+        "  'sem' : [cv_10_rf_metrics.test_score.iloc[1]]},\n",
+        "  index = ['Random forest']\n",
+        ")\n",
+        "results = pd.concat([results, results_rf])\n",
+        "results"
+      ],
+      "id": "027d33e1",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Can we do better?\n",
+        "\n",
+        "- Random forest can be tuned a several important parameters, including:\n",
+        "\n",
+        "  - `n_estimators`: number of decision trees (higher = more complexity)\n",
+        "\n",
+        "  - `max_depth`: max depth of each decision tree (higher = more complexity)\n",
+        "\n",
+        "  - `max_features`: the number of features you get to look at each split \n",
+        "  (higher = more complexity)\n",
+        "  \n",
+        "- We can use `GridSearchCV` to search for the optimal parameters for these,\n",
+        "  as we did for $K$ in $K$-nearest neighbors.\n",
+        "\n",
+        "## Tuning random forest in `scikit-learn`\n"
+      ],
+      "id": "ab518166"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from sklearn.model_selection import GridSearchCV\n",
+        "\n",
+        "rf_param_grid = {'randomforestclassifier__n_estimators': [200, 400, 600, 800, 1000],\n",
+        "              'randomforestclassifier__max_depth': [1, 3, 5, 7, 9],\n",
+        "              'randomforestclassifier__max_features': [1, 2, 3, 4, 5, 6, 7]}\n",
+        "\n",
+        "rf_tune_grid = GridSearchCV(\n",
+        "    estimator=rf_pipeline,\n",
+        "    param_grid=rf_param_grid,\n",
+        "    cv=10,\n",
+        "    n_jobs=-1 # tells computer to use all available CPUs\n",
+        ")\n",
+        "rf_tune_grid.fit(\n",
+        "    X_train_drop_na,\n",
+        "    y_train_drop_na\n",
+        ")\n",
+        "\n",
+        "cv_10_rf_tuned_metrics = pd.DataFrame(rf_tune_grid.cv_results_)\n",
+        "results_rf_tuned = pd.DataFrame({'mean' : rf_tune_grid.best_score_,\n",
+        "  'sem' : pd.DataFrame(rf_tune_grid.cv_results_)['std_test_score'][6] / 10**(1/2)},\n",
+        "  index = ['Random forest tuned']\n",
+        ")\n",
+        "results = pd.concat([results, results_rf_tuned])"
+      ],
+      "id": "39c21d76",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Random Forest results\n",
+        "\n",
+        "How did the Random Forest compare \n",
+        "against the other models we tried?\n"
+      ],
+      "id": "ad271afe"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "results"
+      ],
+      "id": "113fa1f4",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Boosting\n",
+        "\n",
+        "- No randomization.\n",
+        "\n",
+        "- The key idea is combining many simple models called weak learners, \n",
+        "  to create a strong learner.\n",
+        "\n",
+        "- They combine multiple shallow (depth 1 to 5) decision trees.\n",
+        "\n",
+        "- They build trees in a serial manner, \n",
+        "  where each tree tries to correct the mistakes of the previous one.\n",
+        "\n",
+        "## Tuning `GradientBoostingClassifier` with `scikit-learn`\n",
+        "\n",
+        "- `GradientBoostingClassifier` can be tuned a several important parameters, including:\n",
+        "\n",
+        "  - `n_estimators`: number of decision trees (higher = more complexity)\n",
+        "\n",
+        "  - `max_depth`: max depth of each decision tree (higher = more complexity)\n",
+        "\n",
+        "  - `learning_rate`: the shrinkage parameter which controls the rate \n",
+        "  at which boosting learns. Values between 0.01 or 0.001 are typical. \n",
+        "  \n",
+        "- We can use `GridSearchCV` to search for the optimal parameters for these,\n",
+        "  as we did for the parameters in Random Forest.\n",
+        "\n",
+        "## Tuning `GradientBoostingClassifier` with `scikit-learn`\n"
+      ],
+      "id": "134e9d4a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from sklearn.ensemble import GradientBoostingClassifier\n",
+        "\n",
+        "gradient_boosted_classifier = GradientBoostingClassifier()\n",
+        "gb_pipeline = make_pipeline(heart_preprocessor, gradient_boosted_classifier)\n",
+        "\n",
+        "gb_param_grid = {'gradientboostingclassifier__n_estimators': [200, 400, 600, 800, 1000],\n",
+        "              'gradientboostingclassifier__max_depth': [1, 3, 5, 7, 9],\n",
+        "              'gradientboostingclassifier__learning_rate': [0.001, 0.005, 0.01]}\n",
+        "\n",
+        "gb_tune_grid = GridSearchCV(\n",
+        "    estimator=gb_pipeline,\n",
+        "    param_grid=gb_param_grid,\n",
+        "    cv=10,\n",
+        "    n_jobs=-1 # tells computer to use all available CPUs\n",
+        ")\n",
+        "\n",
+        "gb_tune_grid.fit(\n",
+        "    X_train_drop_na,\n",
+        "    y_train_drop_na\n",
+        ")\n",
+        "\n",
+        "cv_10_gb_tuned_metrics = pd.DataFrame(gb_tune_grid.cv_results_)\n",
+        "results_gb_tuned = pd.DataFrame({'mean' : gb_tune_grid.best_score_,\n",
+        "  'sem' : pd.DataFrame(gb_tune_grid.cv_results_)['std_test_score'][6] / 10**(1/2)},\n",
+        "  index = ['Gradient boosted classifier tuned']\n",
+        ")\n",
+        "results = pd.concat([results, results_gb_tuned])"
+      ],
+      "id": "6e5dc315",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## `GradientBoostingClassifier` results\n",
+        "\n",
+        "How did the `GradientBoostingClassifier` compare \n",
+        "against the other models we tried?\n"
+      ],
+      "id": "cd222deb"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "results"
+      ],
+      "id": "9cff5bc4",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## How do we choose the final model?\n",
+        "\n",
+        "- Remember, what is your question or application? \n",
+        "\n",
+        "- A good rule when models are not very different (considering SEM),\n",
+        "  what is the simplest model that does well?\n",
+        "  \n",
+        "- Look at other metrics that are important to you \n",
+        "  (not just the metric you used for tuning your model), \n",
+        "  remember precision & recall, for example.\n",
+        "  \n",
+        "- Remember - no peaking at the test set until you choose! \n",
+        "  And then, you should only look at the test set for one model!\n",
+        "\n",
+        "## Precision and recall on the tuned random forest model\n"
+      ],
+      "id": "ad3ebb71"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from sklearn.metrics import make_scorer, precision_score, recall_score\n",
+        "\n",
+        "# Define scoring metrics\n",
+        "scoring = {\n",
+        "    'accuracy': 'accuracy',\n",
+        "    'precision': make_scorer(precision_score, pos_label='Yes'),  # Assuming 'Yes' is the positive class\n",
+        "    'recall': make_scorer(recall_score, pos_label='Yes')         # Assuming 'Yes' is the positive class\n",
+        "}\n",
+        "\n",
+        "# Set up GridSearchCV with the defined pipeline, parameter grid, and scoring metrics\n",
+        "rf_tune_grid = GridSearchCV(\n",
+        "    estimator=rf_pipeline,\n",
+        "    param_grid=rf_param_grid,\n",
+        "    cv=10,\n",
+        "    n_jobs=-1,\n",
+        "    scoring=scoring,\n",
+        "    refit='accuracy'\n",
+        ")\n",
+        "\n",
+        "# Fit the GridSearchCV model\n",
+        "rf_tune_grid.fit(X_train_drop_na, y_train_drop_na)\n",
+        "\n",
+        "# Extract the results into a DataFrame\n",
+        "cv_results = pd.DataFrame(rf_tune_grid.cv_results_)\n",
+        "\n",
+        "# Calculate mean and standard error for precision and recall\n",
+        "mean_precision = cv_results['mean_test_precision'].iloc[rf_tune_grid.best_index_]\n",
+        "sem_precision = cv_results['std_test_precision'].iloc[rf_tune_grid.best_index_] / np.sqrt(10)\n",
+        "mean_recall = cv_results['mean_test_recall'].iloc[rf_tune_grid.best_index_]\n",
+        "sem_recall = cv_results['std_test_recall'].iloc[rf_tune_grid.best_index_] / np.sqrt(10)\n",
+        "\n",
+        "results_rf_tuned = pd.DataFrame({\n",
+        "    'mean': [rf_tune_grid.best_score_, mean_precision, mean_recall],\n",
+        "    'sem': [cv_results['std_test_accuracy'].iloc[rf_tune_grid.best_index_] / np.sqrt(10), sem_precision, sem_recall],\n",
+        "}, index=['accuracy', 'precision', 'recall'])"
+      ],
+      "id": "e7dcd0ea",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Precision and recall cont'd\n",
+        "\n",
+        "- What do we think? Is this model ready for production in a diagnostic setting?\n",
+        "\n",
+        "- How could we improve it further?\n"
+      ],
+      "id": "cb91bee8"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "results_rf_tuned"
+      ],
+      "id": "3ad73914",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Feature importances\n",
+        "\n",
+        "- Decision trees are very interpretable (decision rules!), however in ensemble \n",
+        "  models (e.g., Random Forest and Boosting) there are many trees - \n",
+        "  individual decision rules are not as meaningful...\n",
+        "\n",
+        "- Instead, we can calculate feature importances. For ensemble tree models,\n",
+        "  these are computed as the mean and standard deviation \n",
+        "  of accumulation of the impurity decrease within each tree.\n",
+        "  \n",
+        "- These are calculated on the training set, \n",
+        "  as that is the set the model is trained on.\n",
+        "\n",
+        "- Caution! Feature importances can be unreliable with both highly cardinal, \n",
+        "  and multicollinear features.\n",
+        "\n",
+        "## Feature importances in `scikit-learn`\n"
+      ],
+      "id": "e920c8a2"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Access the best pipeline\n",
+        "best_pipeline = rf_tune_grid.best_estimator_\n",
+        "\n",
+        "# Extract the trained RandomForestClassifier from the pipeline\n",
+        "best_rf = best_pipeline.named_steps['randomforestclassifier']\n",
+        "\n",
+        "# Extract feature names after preprocessing\n",
+        "# Get the names of features from each transformer in the pipeline\n",
+        "numeric_features = numeric_feats\n",
+        "categorical_feature_names = best_pipeline.named_steps['columntransformer'].transformers_[2][1].get_feature_names_out(categorical_feats)\n",
+        "passthrough_features = passthrough_feats\n",
+        "\n",
+        "# Combine all feature names into a single list\n",
+        "feature_names = np.concatenate([numeric_features, passthrough_features, categorical_feature_names])\n",
+        "\n",
+        "# Calculate feature importances\n",
+        "feature_importances = best_rf.feature_importances_\n",
+        "\n",
+        "# Create a DataFrame to display feature importances\n",
+        "importances_df = pd.DataFrame({\n",
+        "    'Feature': feature_names,\n",
+        "    'Importance': feature_importances\n",
+        "})\n",
+        "\n",
+        "# Sort by importance (descending order)\n",
+        "importances_df = importances_df.sort_values(by='Importance', ascending=False)"
+      ],
+      "id": "9d5faf34",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Visualizing the results\n"
+      ],
+      "id": "947334e9"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import altair as alt\n",
+        "\n",
+        "bar_chart = alt.Chart(importances_df).mark_bar().encode(\n",
+        "    x=alt.X('Importance:Q', title='Feature Importance'),\n",
+        "    y=alt.Y('Feature:N', sort='-x', title='Feature'),\n",
+        "    tooltip=['Feature', 'Importance']\n",
+        ").properties(\n",
+        "    title='Feature Importances from Random Forest Model',\n",
+        "    width=600,\n",
+        "    height=400\n",
+        ").interactive()\n",
+        "\n",
+        "bar_chart"
+      ],
+      "id": "4349a078",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Evaluating on the test set\n",
+        "\n",
+        "1. Predict on the test set:\n"
+      ],
+      "id": "96e82248"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "heart_test_drop_na = heart_test.dropna()\n",
+        "X_test_drop_na = heart_test_drop_na.drop(columns=['AHD'])\n",
+        "y_test_drop_na = heart_test_drop_na['AHD']\n",
+        "\n",
+        "heart_test_drop_na[\"predicted\"] = rf_tune_grid.predict(\n",
+        "    X_test_drop_na\n",
+        ")"
+      ],
+      "id": "1cdae72a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Evaluating on the test set\n",
+        "\n",
+        "2. Examine accuracy, precision and recall:\n",
+        "\n",
+        ":::: {.columns}\n",
+        "::: {.column width=\"50%\"}"
+      ],
+      "id": "d1bf83a4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "rf_tune_grid.score(\n",
+        "    X_test_drop_na,\n",
+        "    y_test_drop_na\n",
+        ")"
+      ],
+      "id": "4f7f262e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "precision_score(\n",
+        "    y_true=heart_test_drop_na[\"AHD\"],\n",
+        "    y_pred=heart_test_drop_na[\"predicted\"],\n",
+        "    pos_label='Yes'\n",
+        ")"
+      ],
+      "id": "720ca2c3",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "recall_score(\n",
+        "    y_true=heart_test_drop_na[\"AHD\"],\n",
+        "    y_pred=heart_test_drop_na[\"predicted\"],\n",
+        "    pos_label='Yes'\n",
+        ")"
+      ],
+      "id": "e3983c50",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        ":::\n",
+        "\n",
+        "::: {.column width=\"50%\"}"
+      ],
+      "id": "cdafc551"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "conf_matrix = pd.crosstab(\n",
+        "    y_true=heart_test_drop_na[\"Class\"],\n",
+        "    y_pred=heart_test_drop_na[\"predicted\"]\n",
+        ")\n",
+        "print(conf_matrix)"
+      ],
+      "id": "d41d1ba5",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        ":::\n",
+        "::::\n",
+        "\n",
+        "## Other boosting models:\n",
+        "\n",
+        ":::: {.columns}\n",
+        "::: {.column width=\"50%\"}\n",
+        "[XGBoost](https://lightgbm.readthedocs.io/)\n",
+        "\n",
+        "- Not part of `sklearn` but has similar interface.\n",
+        "- Supports missing values\n",
+        "- GPU training, networked parallel training\n",
+        "- Supports sparse data\n",
+        "- Typically better scores than random forests\n",
+        "\n",
+        "[LightGBM](https://lightgbm.readthedocs.io/)\n",
+        "\n",
+        "- Not part of sklearn but has similar interface.\n",
+        "- Small model size\n",
+        "- Faster\n",
+        "- Typically better scores than random forests\n",
+        ":::\n",
+        "\n",
+        "::: {.column width=\"50%\"}\n",
+        "[CatBoost](https://catboost.ai/)\n",
+        "- Not part of sklearn but has similar interface.\n",
+        "- Usually better scores but slower compared to XGBoost and LightGBM\n",
+        ":::\n",
+        "::::\n",
+        "\n",
+        "## Additional resources\n",
+        "\n",
+        "- The [UBC DSCI 573 (Feature and Model Selection notes)](https://ubc-mds.github.io/DSCI_573_feat-model-select)\n",
+        "  chapter of Data Science: A First Introduction (Python Edition) by \n",
+        "  Varada Kolhatkar and Joel Ostblom. These notes cover classification and regression metrics,\n",
+        "  advanced variable selection and more on ensembles.\n",
+        "- The [`scikit-learn` website](https://scikit-learn.org/stable/) is an excellent\n",
+        "  reference for more details on, and advanced usage of, the functions and\n",
+        "  packages in the past two chapters. Aside from that, it also offers many\n",
+        "  useful [tutorials](https://scikit-learn.org/stable/tutorial/index.html)\n",
+        "  to get you started. \n",
+        "- [*An Introduction to Statistical Learning*](https://www.statlearning.com/) {cite:p}`james2013introduction` provides\n",
+        "  a great next stop in the process of\n",
+        "  learning about classification. Chapter 4 discusses additional basic techniques\n",
+        "  for classification that we do not cover, such as logistic regression, linear\n",
+        "  discriminant analysis, and naive Bayes.\n",
+        "\n",
+        "## References\n",
+        "\n",
+        "Gareth James, Daniela Witten, Trevor Hastie, Robert Tibshirani and Jonathan Taylor. An Introduction to Statistical Learning with Applications in Python. Springer, 1st edition, 2023. URL: https://www.statlearning.com/.\n",
+        "\n",
+        "Kolhatkar, V., and Ostblom, J. (2024). UBC DSCI 573: Feature and Model Selection course notes. URL: https://ubc-mds.github.io/DSCI_573_feat-model-select\n",
+        "\n",
+        "Pedregosa, F. et al., 2011. Scikit-learn: Machine learning in Python. Journal of machine learning research, 12(Oct), pp.2825–2830."
+      ],
+      "id": "96562900"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "/Users/timberst/miniconda3/share/jupyter/kernels/python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
