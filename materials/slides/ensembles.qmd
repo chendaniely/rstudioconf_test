@@ -581,8 +581,8 @@ recall_score(
 ::: {.column width="50%"}
 ```{python}
 conf_matrix = pd.crosstab(
-    y_true=heart_test_drop_na["AHD"],
-    y_pred=heart_test_drop_na["predicted"]
+    heart_test_drop_na["AHD"],
+    heart_test_drop_na["predicted"]
 )
 print(conf_matrix)
 ```
