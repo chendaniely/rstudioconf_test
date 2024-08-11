@@ -371,18 +371,15 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 gradient_boosted_classifier = GradientBoostingClassifier()
 gb_pipeline = make_pipeline(heart_preprocessor, gradient_boosted_classifier)
-
 gb_param_grid = {'gradientboostingclassifier__n_estimators': [200, 400, 600, 800, 1000],
               'gradientboostingclassifier__max_depth': [1, 3, 5, 7, 9],
               'gradientboostingclassifier__learning_rate': [0.001, 0.005, 0.01]}
-
 gb_tune_grid = GridSearchCV(
     estimator=gb_pipeline,
     param_grid=gb_param_grid,
     cv=10,
     n_jobs=-1 # tells computer to use all available CPUs
 )
-
 gb_tune_grid.fit(
     X_train_drop_na,
     y_train_drop_na
@@ -424,14 +421,12 @@ results
 ```{python}
 from sklearn.metrics import make_scorer, precision_score, recall_score
 
-# Define scoring metrics
 scoring = {
     'accuracy': 'accuracy',
     'precision': make_scorer(precision_score, pos_label='Yes'),  # Assuming 'Yes' is the positive class
     'recall': make_scorer(recall_score, pos_label='Yes')         # Assuming 'Yes' is the positive class
 }
 
-# Set up GridSearchCV with the defined pipeline, parameter grid, and scoring metrics
 rf_tune_grid = GridSearchCV(
     estimator=rf_pipeline,
     param_grid=rf_param_grid,
@@ -441,22 +436,7 @@ rf_tune_grid = GridSearchCV(
     refit='accuracy'
 )
 
-# Fit the GridSearchCV model
 rf_tune_grid.fit(X_train_drop_na, y_train_drop_na)
-
-# Extract the results into a DataFrame
-cv_results = pd.DataFrame(rf_tune_grid.cv_results_)
-
-# Calculate mean and standard error for precision and recall
-mean_precision = cv_results['mean_test_precision'].iloc[rf_tune_grid.best_index_]
-sem_precision = cv_results['std_test_precision'].iloc[rf_tune_grid.best_index_] / np.sqrt(10)
-mean_recall = cv_results['mean_test_recall'].iloc[rf_tune_grid.best_index_]
-sem_recall = cv_results['std_test_recall'].iloc[rf_tune_grid.best_index_] / np.sqrt(10)
-
-results_rf_tuned = pd.DataFrame({
-    'mean': [rf_tune_grid.best_score_, mean_precision, mean_recall],
-    'sem': [cv_results['std_test_accuracy'].iloc[rf_tune_grid.best_index_] / np.sqrt(10), sem_precision, sem_recall],
-}, index=['accuracy', 'precision', 'recall'])
 ```
 
 ## Precision and recall cont'd
@@ -466,10 +446,27 @@ results_rf_tuned = pd.DataFrame({
 - How could we improve it further?
 
 ```{python}
+cv_results = pd.DataFrame(rf_tune_grid.cv_results_)
+
+mean_precision = cv_results['mean_test_precision'].iloc[rf_tune_grid.best_index_]
+sem_precision = cv_results['std_test_precision'].iloc[rf_tune_grid.best_index_] / np.sqrt(10)
+mean_recall = cv_results['mean_test_recall'].iloc[rf_tune_grid.best_index_]
+sem_recall = cv_results['std_test_recall'].iloc[rf_tune_grid.best_index_] / np.sqrt(10)
+
+results_rf_tuned = pd.DataFrame({
+    'mean': [rf_tune_grid.best_score_, mean_precision, mean_recall],
+    'sem': [cv_results['std_test_accuracy'].iloc[rf_tune_grid.best_index_] / np.sqrt(10), sem_precision, sem_recall],
+}, index=['accuracy', 'precision', 'recall'])
+
 results_rf_tuned
 ```
 
 ## Feature importances
+
+:::: {.columns}
+::: {.column width="50%"}
+
+**Key points:**
 
 - Decision trees are very interpretable (decision rules!), however in ensemble 
   models (e.g., Random Forest and Boosting) there are many trees - 
@@ -481,9 +478,27 @@ results_rf_tuned
   
 - These are calculated on the training set, 
   as that is the set the model is trained on.
+  
+:::
 
-- Caution! Feature importances can be unreliable with both highly cardinal, 
+::: {.column width="50%"}
+
+**Notes of caution!**
+
+- Feature importances can be unreliable with both highly cardinal, 
   and multicollinear features.
+  
+- Unlike the linear model coefficients, feature importances do not have a sign!
+  They tell us about importance, but not an “up or down”.
+
+- Increasing a feature may cause the prediction to first go up, and then go down.
+
+- Alternatives to feature importance to understanding models exist 
+  (e.g., [SHAP](https://shap.readthedocs.io/en/latest/example_notebooks/overviews/An%20introduction%20to%20explainable%20AI%20with%20Shapley%20values.html) 
+  (SHapley Additive exPlanations))
+  
+:::
+::::
 
 ## Feature importances in `scikit-learn`
 
@@ -518,6 +533,9 @@ importances_df = importances_df.sort_values(by='Importance', ascending=False)
 
 ## Visualizing the results
 
+:::: {.columns}
+::: {.column width="50%"}
+
 ```{python}
 import altair as alt
 
@@ -527,12 +545,20 @@ bar_chart = alt.Chart(importances_df).mark_bar().encode(
     tooltip=['Feature', 'Importance']
 ).properties(
     title='Feature Importances from Random Forest Model',
-    width=600,
+    width=350,
     height=400
-).interactive()
+)
+```
+:::
 
+::: {.column width="50%"}
+
+```{python}
 bar_chart
 ```
+
+:::
+::::
 
 ## Evaluating on the test set
 
@@ -600,16 +626,16 @@ print(conf_matrix)
 - GPU training, networked parallel training
 - Supports sparse data
 - Typically better scores than random forests
+:::
 
+::: {.column width="50%"}
 [LightGBM](https://lightgbm.readthedocs.io/)
 
 - Not part of sklearn but has similar interface.
 - Small model size
 - Faster
 - Typically better scores than random forests
-:::
 
-::: {.column width="50%"}
 [CatBoost](https://catboost.ai/)
 - Not part of sklearn but has similar interface.
 - Usually better scores but slower compared to XGBoost and LightGBM
